@@ -948,7 +948,7 @@ constant propagation). This is useful for IPO debugging purposes.
 The keyword `debuginfo` controls the amount of code metadata present in the output.
 """
 function code_typed(@nospecialize(f), @nospecialize(types=Tuple),
-                    constvals::Union{Nothing, Array{Any, 1}}=nothing; optimize=true, debuginfo::Symbol=:default)
+                    constvals::Union{Nothing, Array{Any, 1}}=nothing; optimize=true, debuginfo::Symbol=:default, params=nothing)
     ccall(:jl_is_in_pure_context, Bool, ()) && error("code reflection cannot be used from generated functions")
     if isa(f, Core.Builtin)
         throw(ArgumentError("argument is not a generic function"))
@@ -961,7 +961,7 @@ function code_typed(@nospecialize(f), @nospecialize(types=Tuple),
     types = to_tuple_type(types)
     asts = []
     world = ccall(:jl_get_world_counter, UInt, ())
-    params = Core.Compiler.Params(world)
+    params = params === nothing ? Core.Compiler.Params(world) : params
     for x in _methods(f, types, -1, world)
         meth = func_for_method_checked(x[3], types)
         argtypes = nothing

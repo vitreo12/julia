@@ -96,7 +96,7 @@ struct ExceptionStack
 end
 
 """
-    catch_stack(task=current_task(); [inclue_bt=true])
+    current_exceptions(task=current_task(); [inclue_bt=true])
 
 Get the stack of exceptions currently being handled. For nested catch blocks
 there may be more than one current exception in which case the most recently
@@ -112,7 +112,7 @@ uncaught exceptions.
     This function is experimental in Julia 1.1 and will likely be renamed in a
     future release (see https://github.com/JuliaLang/julia/pull/29901).
 """
-function catch_stack(task=current_task(); include_bt=true)
+function current_exceptions(task=current_task(); include_bt=true)
     raw = ccall(:jl_get_excstack, Any, (Any,Cint,Cint), task, include_bt, typemax(Cint))
     formatted = Any[]
     stride = include_bt ? 3 : 1

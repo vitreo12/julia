@@ -2151,3 +2151,13 @@ g30098() = (h30098(:f30098); 4)
 h30098(f) = getfield(@__MODULE__, f)()
 @test @inferred(g30098()) == 4 # make sure that this
 @test @inferred(f30098()) == 3 # doesn't pollute the inference cache of this
+
+# Test that inlining can inline _applys of builtins/_applys on SimpleVectors
+function foo_apply_apply_type_svec()
+    A = (Tuple, Float32)
+    B = Tuple{Float32, Float32}
+    Core.apply_type(A..., B.types...)
+end
+let ci = code_typed(foo_apply_apply_type_svec, Tuple{})[1].first
+    @test length(ci.code) == 1
+end

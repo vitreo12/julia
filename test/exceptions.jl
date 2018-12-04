@@ -235,7 +235,7 @@ end
     yield(t)
     @test t.state == :failed
     @test t.result == ErrorException("B")
-    @test current_exceptions(t, include_bt=false) == [
+    @test current_exceptions(t, backtrace=false) == [
         (exception=ErrorException("A"),backtrace=nothing),
         (exception=ErrorException("B"),backtrace=nothing)
     ]

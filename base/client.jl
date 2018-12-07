@@ -300,8 +300,8 @@ function exec_options(opts)
         end
         try
             include(Main, PROGRAM_FILE)
-        catch err
-            invokelatest(display_error, err, catch_backtrace())
+        catch
+            invokelatest(display_error, current_exceptions())
             if !is_interactive
                 exit(1)
             end

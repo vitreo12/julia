@@ -84,19 +84,8 @@ function showerror(io::IO, ex, bt; backtrace=true)
     end
 end
 
-function showerror(io::IO, ex::LoadError, bt; backtrace=true)
-    print(io, "LoadError: ")
-    showerror(io, ex.error, bt, backtrace=backtrace)
-    print(io, "\nin expression starting at $(ex.file):$(ex.line)")
-end
-showerror(io::IO, ex::LoadError) = showerror(io, ex, [])
-
-function showerror(io::IO, ex::InitError, bt; backtrace=true)
-    print(io, "InitError: ")
-    showerror(io, ex.error, bt, backtrace=backtrace)
-    print(io, "\nduring initialization of module ", ex.mod)
-end
-showerror(io::IO, ex::InitError) = showerror(io, ex, [])
+showerror(io::IO, ex::LoadError) = print(io, "LoadError in expression starting at ", ex.file, ":", ex.line)
+showerror(io::IO, ex::InitError) = print(io, "InitError during initialization of module ", ex.mod)
 
 function showerror(io::IO, ex::DomainError, bt; backtrace=true)
     if isa(ex.val, AbstractArray)

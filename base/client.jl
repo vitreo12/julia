@@ -122,16 +122,18 @@ display_error(er, bt) = display_error(stderr, er, bt)
 display_error(er::ExceptionStack) = display_error(stderr, er)
 display_error(er) = display_error(er, [])
 
-function eval_user_input(@nospecialize(ast), show_value::Bool)
-    errcount, lasterr, bt = 0, (), nothing
+function eval_user_input(errio, @nospecialize(ast), show_value::Bool)
+    errcount = 0
+    lasterr = nothing
     while true
         try
             if have_color
                 print(color_normal)
             end
-            if errcount > 0
-                invokelatest(display_error, lasterr, bt)
-                errcount, lasterr = 0, ()
+            if lasterr !== nothing
+                invokelatest(display_error, errio, lasterr)
+                errcount = 0
+                lasterr = nothing
             else
                 ast = Meta.lower(Main, ast)
                 value = Core.eval(Main, ast)
@@ -143,23 +145,23 @@ function eval_user_input(@nospecialize(ast), show_value::Bool)
                     try
                         invokelatest(display, value)
                     catch
-                        println(stderr, "Evaluation succeeded, but an error occurred while showing value of type ", typeof(value), ":")
+                        @error "Evaluation succeeded, but an error occurred while displaying the value" typeof(value)
                         rethrow()
                     end
                     println()
                 end
             end
             break
-        catch err
+        catch
             if errcount > 0
-                println(stderr, "SYSTEM: show(lasterr) caused an error")
+                @error "SYSTEM: display_error(errio, lasterr) caused an error"
             end
-            errcount, lasterr = errcount+1, err
+            errcount += 1
+            lasterr = current_exceptions()
             if errcount > 2
-                println(stderr, "WARNING: it is likely that something important is broken, and Julia will not be able to continue normally")
+                @error "It is likely that something important is broken, and Julia will not be able to continue normally" errcount
                 break
             end
-            bt = catch_backtrace()
         end
     end
     isa(stdin, TTY) && println()
@@ -410,11 +412,11 @@ function run_main_repl(interactive::Bool, quiet::Bool, banner::Bool, history_fil
                     # if we get back a list of statements, eval them sequentially
                     # as if we had parsed them sequentially
                     for stmt in ex.args
-                        eval_user_input(stmt, true)
+                        eval_user_input(stderr, stmt, true)
                     end
                     body = ex.args
                 else
-                    eval_user_input(ex, true)
+                    eval_user_input(stderr, ex, true)
                 end
             else
                 while isopen(input) || !eof(input)
@@ -423,7 +425,7 @@ function run_main_repl(interactive::Bool, quiet::Bool, banner::Bool, history_fil
                         flush(stdout)
                     end
                     try
-                        eval_user_input(parse_input_line(input), true)
+                        eval_user_input(stderr, parse_input_line(input), true)
                     catch err
                         isa(err, InterruptException) ? print("\n\n") : rethrow()
                     end

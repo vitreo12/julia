@@ -367,6 +367,10 @@ ifneq ($(LLVM_GIT_VER_CLANG),)
 	(cd $(LLVM_SRC_DIR)/tools/clang && \
 		git checkout $(LLVM_GIT_VER_CLANG))
 endif # LLVM_GIT_VER_CLANG
+ifneq ($(LLVM_GIT_VER_COMPILER_RT),)
+	(cd $(LLVM_SRC_DIR)/tools/clang && \
+		git checkout $(LLVM_GIT_VER_COMPILER_RT))
+endif # LLVM_GIT_VER_COMPILER_RT
 endif # BUILD_LLVM_CLANG
 ifeq ($(BUILD_LLDB),1)
 	([ ! -d $(LLVM_SRC_DIR)/tools/lldb ] && \

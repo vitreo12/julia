@@ -368,7 +368,7 @@ ifneq ($(LLVM_GIT_VER_CLANG),)
 		git checkout $(LLVM_GIT_VER_CLANG))
 endif # LLVM_GIT_VER_CLANG
 ifneq ($(LLVM_GIT_VER_COMPILER_RT),)
-	(cd $(LLVM_SRC_DIR)/tools/clang && \
+	(cd $(LLVM_SRC_DIR)/projects/compiler-rt && \
 		git checkout $(LLVM_GIT_VER_COMPILER_RT))
 endif # LLVM_GIT_VER_COMPILER_RT
 endif # BUILD_LLVM_CLANG

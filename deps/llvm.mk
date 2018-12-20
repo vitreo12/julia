@@ -355,11 +355,11 @@ ifneq ($(LLVM_LLDB_TAR),)
 endif # LLVM_LLDB_TAR
 else # LLVM_VER
 ifeq ($(BUILD_LLVM_CLANG),1)
-	([ ! -d $(LLVM_SRC_DIR)/tools/clang ] && \
+	([ ! -d $(LLVM_SRC_DIR)/tools/clang/.git ] && \
 		git clone $(LLVM_GIT_URL_CLANG) $(LLVM_SRC_DIR)/tools/clang  ) || \
 		(cd $(LLVM_SRC_DIR)/tools/clang  && \
 		git pull --ff-only)
-	([ ! -d $(LLVM_SRC_DIR)/projects/compiler-rt ] && \
+	([ ! -d $(LLVM_SRC_DIR)/projects/compiler-rt/.git ] && \
 		git clone $(LLVM_GIT_URL_COMPILER_RT) $(LLVM_SRC_DIR)/projects/compiler-rt  ) || \
 		(cd $(LLVM_SRC_DIR)/projects/compiler-rt  && \
 		git pull --ff-only)

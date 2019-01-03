@@ -3047,7 +3047,7 @@ f(x) = yt(x)
                         (del! unused (cadr e)))
                  ;; in all other cases there's nothing to do except assert that
                  ;; all expression heads have been handled.
-                 #;(assert (memq (car e) '(= method new call foreigncall cfunction |::|)))))))
+                 #;(assert (memq (car e) '(= method new splatnew call foreigncall cfunction |::|)))))))
     (visit (lam:body lam))
     ;; Finally, variables can be marked never-undef if they were set in the first block,
     ;; or are currently live, or are back in the unused set (because we've left the only
@@ -3414,7 +3414,7 @@ f(x) = yt(x)
   (or (ssavalue? lhs)
       (valid-ir-argument? e)
       (and (symbol? lhs) (pair? e)
-           (memq (car e) '(new the_exception isdefined call invoke foreigncall cfunction gc_preserve_begin copyast)))))
+           (memq (car e) '(new splatnew the_exception isdefined call invoke foreigncall cfunction gc_preserve_begin copyast)))))
 
 (define (valid-ir-return? e)
   ;; returning lambda directly is needed for @generated
@@ -3604,7 +3604,7 @@ f(x) = yt(x)
                   ((and (pair? e1) (eq? (car e1) 'globalref)) (emit e1) #f) ;; keep globals for undefined-var checking
                   (else #f)))
           (case (car e)
-            ((call new foreigncall cfunction)
+            ((call new splatnew foreigncall cfunction)
              (let* ((args
                      (cond ((eq? (car e) 'foreigncall)
                             ;; NOTE: 2nd to 5th arguments of ccall must be left in place

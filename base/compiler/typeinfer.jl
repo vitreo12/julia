@@ -314,7 +314,7 @@ function type_annotate!(sv::InferenceState)
     src = sv.src
     states = sv.stmt_types
     nargs = sv.nargs
-    nslots = length(states[1])
+    nslots = length(states[1]::Array{Any,1})
     undefs = fill(false, nslots)
     body = src.code::Array{Any,1}
     nexpr = length(body)

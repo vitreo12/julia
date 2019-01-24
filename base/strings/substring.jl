@@ -192,7 +192,7 @@ function string(a::Union{Char, String, SubString{String}}...)
 end
 
 function repeat(s::Union{String, SubString{String}}, r::Integer)
-    r < 0 && throw(ArgumentError("can't repeat a string $r times"))
+    r < 0 && throw(DomainError(r, "repeat count cannot be negative"))
     r == 1 && return String(s)
     n = sizeof(s)
     out = _string_n(n*r)

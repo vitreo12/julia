@@ -456,7 +456,7 @@ prevind(s::AbstractString, i::Integer)             = prevind(s, Int(i))
 prevind(s::AbstractString, i::Int)                 = prevind(s, i, 1)
 
 function prevind(s::AbstractString, i::Int, n::Int)
-    n < 0 && throw(ArgumentError("n cannot be negative: $n"))
+    n < 0 && throw(DomainError(n, "n cannot be negative"))
     z = ncodeunits(s) + 1
     @boundscheck 0 < i ≤ z || throw(BoundsError(s, i))
     n == 0 && return thisind(s, i) == i ? i : string_index_err(s, i)
@@ -516,7 +516,7 @@ nextind(s::AbstractString, i::Integer)             = nextind(s, Int(i))
 nextind(s::AbstractString, i::Int)                 = nextind(s, i, 1)
 
 function nextind(s::AbstractString, i::Int, n::Int)
-    n < 0 && throw(ArgumentError("n cannot be negative: $n"))
+    n < 0 && throw(DomainError(n, "n cannot be negative"))
     z = ncodeunits(s)
     @boundscheck 0 ≤ i ≤ z || throw(BoundsError(s, i))
     n == 0 && return thisind(s, i) == i ? i : string_index_err(s, i)
@@ -571,8 +571,7 @@ function map(f, s::AbstractString)
     for c in s
         c′ = f(c)
         isa(c′, AbstractChar) || throw(ArgumentError(
-            "map(f, s::AbstractString) requires f to return AbstractChar; " *
-            "try map(f, collect(s)) or a comprehension instead"))
+            "map(f, s::AbstractString) requires f to return AbstractChar; try map(f, collect(s)) or a comprehension instead"))
         write(out, c′::AbstractChar)
     end
     String(take!(out))

@@ -309,7 +309,7 @@ julia> repeat('A', 3)
 repeat(c::AbstractChar, r::Integer) = repeat(Char(c), r) # fallback
 function repeat(c::Char, r::Integer)
     r == 0 && return ""
-    r < 0 && throw(ArgumentError("can't repeat a character $r times"))
+    r < 0 && throw(DomainError(r, "repeat count cannot be negative"))
     u = bswap(reinterpret(UInt32, c))
     n = 4 - (leading_zeros(u | 0xff) >> 3)
     s = _string_n(n*r)

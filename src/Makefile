@@ -17,7 +17,10 @@ FLAGS := \
 	-D_GNU_SOURCE -I$(BUILDDIR) -I$(SRCDIR) \
 	-I$(SRCDIR)/flisp -I$(SRCDIR)/support \
 	-I$(LIBUV_INC) -I$(build_includedir) -DLIBRARY_EXPORTS \
-	-I$(JULIAHOME)/deps/valgrind
+	-I$(JULIAHOME)/deps/valgrind \
+	-I$(SC_PATH)/include/plugin_interface \
+	-I$(SC_PATH)/include/common \
+	-I$(SC_PATH)/common
 ifneq ($(USEMSVC), 1)
 FLAGS += -Wall -Wno-strict-aliasing -fno-omit-frame-pointer -fvisibility=hidden -fno-common \
 		 -Wpointer-arith -Wundef
@@ -138,6 +141,10 @@ LLVM_CONFIG_ABSOLUTE := $(shell which $(LLVM_CONFIG))
 
 # source file rules
 $(BUILDDIR)/%.o: $(SRCDIR)/%.c $(HEADERS) | $(BUILDDIR)
+	@echo "COMPILER IS: $(CC)"
+	@echo "CPP FLAGS: $(CPPFLAGS)"
+	@echo "C FLAGS: $(CFLAGS)"
+	@echo "SHIPFLAGS: $(SHIPFLAGS)"
 	@$(call PRINT_CC, $(CC) $(CPPFLAGS) $(CFLAGS) $(SHIPFLAGS) $(DISABLE_ASSERTIONS) -c $< -o $@)
 $(BUILDDIR)/%.dbg.obj: $(SRCDIR)/%.c $(HEADERS) | $(BUILDDIR)
 	@$(call PRINT_CC, $(CC) $(CPPFLAGS) $(CFLAGS) $(DEBUGFLAGS) -c $< -o $@)

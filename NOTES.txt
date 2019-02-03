@@ -1,0 +1,2 @@
+1) SC_PATH is currently not needed. Everything included in the SC_JuliaInclude.h header file
+2) Perhaps I need to add extern to everything in order to tell compiler that stuff is compiled elsewhere? (SC, in this case)

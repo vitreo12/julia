@@ -60,6 +60,7 @@ struct Rate
 	int mFilterLoops, mFilterRemain;
 	double mFilterSlope;
 };
+
 typedef struct Rate Rate;
 
 struct World
@@ -130,13 +131,15 @@ struct World
 	const char* mRestrictedPath; // OSC commands to read/write data can only do it within this path, if specified
 };
 
+typedef struct World World;
+
 typedef void (*UnitCtorFunc)(struct Unit* inUnit);
 typedef void (*UnitDtorFunc)(struct Unit* inUnit);
-typedef void (*PlugInCmdFunc)(struct World *inWorld, void* inUserData, struct sc_msg_iter *args, void *replyAddr);
+typedef void (*PlugInCmdFunc)(World *inWorld, void* inUserData, struct sc_msg_iter *args, void *replyAddr);
 typedef void (*UnitCmdFunc)(struct Unit *unit, struct sc_msg_iter *args);
-typedef void (*BufGenFunc)(struct World *world, struct SndBuf *buf, struct sc_msg_iter *msg);
-typedef bool (*AsyncStageFn)(struct World *inWorld, void* cmdData);
-typedef void (*AsyncFreeFn)(struct World *inWorld, void* cmdData);
+typedef void (*BufGenFunc)(World *world, struct SndBuf *buf, struct sc_msg_iter *msg);
+typedef bool (*AsyncStageFn)(World *inWorld, void* cmdData);
+typedef void (*AsyncFreeFn)(World *inWorld, void* cmdData);
 
 enum SCFFT_Direction
 {
@@ -186,9 +189,9 @@ struct InterfaceTable
 	void  (*fNRTFree)(void *inPtr);
 
 	// real time memory allocation
-	void* (*fRTAlloc)(struct World *inWorld, size_t inSize);
-	void* (*fRTRealloc)(struct World *inWorld, void *inPtr, size_t inSize);
-	void  (*fRTFree)(struct World *inWorld, void *inPtr);
+	void* (*fRTAlloc)(World *inWorld, size_t inSize);
+	void* (*fRTRealloc)(World *inWorld, void *inPtr, size_t inSize);
+	void  (*fRTFree)(World *inWorld, void *inPtr);
 
 	// call to set a Node to run or not.
 	void (*fNodeRun)(struct Node* node, int run);
@@ -203,19 +206,19 @@ struct InterfaceTable
 	void (*fSendNodeReply)(struct Node* inNode, int replyID, const char* cmdName, int numArgs, const float* values);
 
 	// sending messages between real time and non real time levels.
-	bool (*fSendMsgFromRT)(struct World *inWorld, struct FifoMsg* inMsg);
-	bool (*fSendMsgToRT)(struct World *inWorld, struct FifoMsg* inMsg);
+	bool (*fSendMsgFromRT)(World *inWorld, struct FifoMsg* inMsg);
+	bool (*fSendMsgToRT)(World *inWorld, struct FifoMsg* inMsg);
 
 	// libsndfile support
 	int (*fSndFileFormatInfoFromStrings)(struct SF_INFO *info,
 		const char *headerFormatString, const char *sampleFormatString);
 
 	// get nodes by id
-	struct Node* (*fGetNode)(struct World *inWorld, int inID);
-	struct Graph* (*fGetGraph)(struct World *inWorld, int inID);
+	struct Node* (*fGetNode)(World *inWorld, int inID);
+	struct Graph* (*fGetGraph)(World *inWorld, int inID);
 
-	void (*fNRTLock)(struct World *inWorld);
-	void (*fNRTUnlock)(struct World *inWorld);
+	void (*fNRTLock)(World *inWorld);
+	void (*fNRTUnlock)(World *inWorld);
 
 	bool mUnused0;
 
@@ -224,7 +227,7 @@ struct InterfaceTable
 
 	int (*fDoAsynchronousCommand)
 		(
-			struct World *inWorld,
+			World *inWorld,
 			void* replyAddr,
 			const char* cmdName,
 			void *cmdData,
@@ -250,10 +253,17 @@ struct InterfaceTable
 	void (*fSCfftDestroy)(struct scfft *f, struct SCFFT_Allocator* alloc);
 
 	// Get scope buffer. Returns the maximum number of possile frames.
-	bool (*fGetScopeBuffer)(struct World *inWorld, int index, int channels, int maxFrames, struct ScopeBufferHnd* bufHand);
-	void (*fPushScopeBuffer)(struct World *inWorld, struct ScopeBufferHnd* bufHand, int frames);
-	void (*fReleaseScopeBuffer)(struct World *inWorld, struct ScopeBufferHnd* bufHand);
+	bool (*fGetScopeBuffer)(World *inWorld, int index, int channels, int maxFrames, struct ScopeBufferHnd* bufHand);
+	void (*fPushScopeBuffer)(World *inWorld, struct ScopeBufferHnd* bufHand, int frames);
+	void (*fReleaseScopeBuffer)(World *inWorld, struct ScopeBufferHnd* bufHand);
 };
+
+typedef struct InterfaceTable InterfaceTable;
+
+//They will be pointing to server's ones at Julia boot.
+//static will assure just one global state.
+static World* SCWorld;
+static InterfaceTable* ft;
 
 #define SC_NRTAlloc (*ft->fNRTAlloc)
 #define SC_NRTRealloc (*ft->fNRTRealloc)
@@ -262,5 +272,14 @@ struct InterfaceTable
 #define SC_RTAlloc (*ft->fRTAlloc)
 #define SC_RTRealloc (*ft->fRTRealloc)
 #define SC_RTFree (*ft->fRTFree)
+
+static inline void* SC_RTCalloc(World* inWorld, size_t nitems, size_t inSize)
+{
+	size_t length = inSize * nitems;
+	void* alloc_memory = SC_RTAlloc(inWorld, length);
+	if(alloc_memory)
+		memset(alloc_memory, 0, length);
+	return alloc_memory;
+}
 
 #endif

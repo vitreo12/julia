@@ -43,10 +43,14 @@ JL_DLLEXPORT int jl_is_initialized(void)
 /*
 JL_DLLEXPORT void jl_init_with_image(const char *julia_bindir,
                                      const char *image_relative_path,
-                                     World* inWorld)
+                                     World* inWorld,
+                                     InterfaceTable* inFt)
 {
-    SCWorld = inWorld;
-    
+    if(!SCWorld)
+        SCWorld = inWorld;
+    if(!ft)
+        ft = inFt;
+
     if (jl_is_initialized())
         return;
     libsupport_init();

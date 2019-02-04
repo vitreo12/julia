@@ -518,7 +518,19 @@ typedef struct {
 // constants and type objects -------------------------------------------------
 
 //SuperCollider global World pointer
-//World* SCWorld;
+/*
+World* SCWorld;
+InterfaceTable* ft; //Same name as with a normal UGen. Used for alloc as the macro expands to *ft->...
+
+inline void* SC_RTCalloc(struct World* inWorld, size_t nitems, size_t inSize)
+{
+	size_t length = inSize * nitems;
+	void* alloc_memory = SC_RTAlloc(inWorld, length);
+	if(alloc_memory)
+		memset(alloc_memory, 0, length);
+	return alloc_memory;
+}
+*/
 
 // kinds
 extern JL_DLLEXPORT jl_datatype_t *jl_typeofbottom_type JL_GLOBALLY_ROOTED;
@@ -1477,7 +1489,8 @@ JL_DLLEXPORT void jl_init(void);
 //ENTRY POINT FOR SUPERCOLLIDER
 /*JL_DLLEXPORT void jl_init_with_image(const char *julia_bindir,
                                      const char *image_relative_path, 
-                                     World* inWorld);*/
+                                     World* inWorld,
+                                     InterfaceTable* inFt);*/
 
 JL_DLLEXPORT void jl_init_with_image(const char *julia_bindir,
                                      const char *image_relative_path); 

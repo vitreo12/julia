@@ -1494,6 +1494,8 @@ JL_DLLEXPORT void jl_init_with_image_SC(const char *julia_bindir,
                                      struct World* inWorld,
                                      struct InterfaceTable* inFt);
 
+JL_DLLEXPORT void jl_check_SC_world_and_ft(struct World* inWorld, struct InterfaceTable* inFt);
+
 JL_DLLEXPORT const char *jl_get_default_sysimg_path(void);
 JL_DLLEXPORT int jl_is_initialized(void);
 JL_DLLEXPORT void jl_atexit_hook(int status);

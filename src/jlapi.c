@@ -83,6 +83,19 @@ JL_DLLEXPORT void jl_init_with_image_SC(const char *julia_bindir,
     jl_exception_clear();
 }
 
+JL_DLLEXPORT void jl_check_SC_world_and_ft(World* inWorld, InterfaceTable* inFt)
+{
+    if(SCWorld == inWorld)
+        printf("SAME WORLD\n");
+    else
+        printf("DIFFERENT WORLD\n");
+
+    if(ft == inFt)
+        printf("SAME INTERFACE TABLE\n");
+    else
+        printf("DIFFERENT INTERFACE TABLE\n");
+}
+
 JL_DLLEXPORT void jl_init(void)
 {
     char *libbindir = NULL;

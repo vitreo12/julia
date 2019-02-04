@@ -96,6 +96,16 @@ JL_DLLEXPORT void jl_check_SC_world_and_ft(World* inWorld, InterfaceTable* inFt)
         printf("DIFFERENT INTERFACE TABLE\n");
 }
 
+JL_DLLEXPORT void jl_SC_alloc(int size_alloc)
+{
+    float* memory_allocated = (float*)SC_RTAlloc(SCWorld, size_alloc * sizeof(float));
+    for(int i = 0; i < size_alloc; i++)
+    {
+        memory_allocated[i] = (float)i;
+        printf("VALUE IN ARRAY: %f\n", memory_allocated[i]);
+    }
+}
+
 JL_DLLEXPORT void jl_init(void)
 {
     char *libbindir = NULL;

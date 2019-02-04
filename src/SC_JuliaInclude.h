@@ -154,6 +154,9 @@ enum SCFFT_WindowFunction
 	kHannWindow = 1
 };
 
+typedef enum SCFFT_Direction SCFFT_Direction;
+typedef enum SCFFT_WindowFunction SCFFT_WindowFunction;
+
 struct InterfaceTable
 {
 	unsigned int mSineSize;
@@ -243,8 +246,8 @@ struct InterfaceTable
 	// fBufAlloc should only be called within a BufGenFunc
 	int (*fBufAlloc)(struct SndBuf *inBuf, int inChannels, int inFrames, double inSampleRate);
 	
-	struct scfft * (*fSCfftCreate)(size_t fullsize, size_t winsize, enum SCFFT_WindowFunction wintype,
-					 float *indata, float *outdata, enum SCFFT_Direction forward, struct SCFFT_Allocator* alloc);
+	struct scfft * (*fSCfftCreate)(size_t fullsize, size_t winsize, SCFFT_WindowFunction wintype,
+					 float *indata, float *outdata, SCFFT_Direction forward, struct SCFFT_Allocator* alloc);
 
 	void (*fSCfftDoFFT)(struct scfft *f);
 	void (*fSCfftDoIFFT)(struct scfft *f);

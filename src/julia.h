@@ -9,8 +9,6 @@
 #define STORE_ARRAY_LEN
 //** End Configuration options **//
 
-//SC STUFF
-#include "SC_JuliaInclude.h"
 
 #include "libsupport.h"
 #include <stdint.h>
@@ -1486,14 +1484,15 @@ typedef enum {
 JL_DLLEXPORT void julia_init(JL_IMAGE_SEARCH rel);
 JL_DLLEXPORT void jl_init(void);
 
-//ENTRY POINT FOR SUPERCOLLIDER
-/*JL_DLLEXPORT void jl_init_with_image(const char *julia_bindir,
-                                     const char *image_relative_path, 
-                                     World* inWorld,
-                                     InterfaceTable* inFt);*/
 
 JL_DLLEXPORT void jl_init_with_image(const char *julia_bindir,
                                      const char *image_relative_path); 
+
+//ENTRY POINT FOR SUPERCOLLIDER
+JL_DLLEXPORT void jl_init_with_image_SC(const char *julia_bindir,
+                                     const char *image_relative_path, 
+                                     struct World* inWorld,
+                                     struct InterfaceTable* inFt);
 
 JL_DLLEXPORT const char *jl_get_default_sysimg_path(void);
 JL_DLLEXPORT int jl_is_initialized(void);

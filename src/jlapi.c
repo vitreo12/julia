@@ -7,6 +7,9 @@
 */
 #include "platform.h"
 
+//SC STUFF
+#include "SC_JuliaInclude.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -40,17 +43,10 @@ JL_DLLEXPORT int jl_is_initialized(void)
 // Second argument is the path of a system image file (*.ji) relative to the
 // first argument path, or relative to the default julia home dir.
 // The default is something like ../lib/julia/sys.ji
-/*
-JL_DLLEXPORT void jl_init_with_image(const char *julia_bindir,
-                                     const char *image_relative_path,
-                                     World* inWorld,
-                                     InterfaceTable* inFt)
-{
-    if(!SCWorld)
-        SCWorld = inWorld;
-    if(!ft)
-        ft = inFt;
 
+JL_DLLEXPORT void jl_init_with_image(const char *julia_bindir,
+                                     const char *image_relative_path)
+{
     if (jl_is_initialized())
         return;
     libsupport_init();
@@ -62,11 +58,19 @@ JL_DLLEXPORT void jl_init_with_image(const char *julia_bindir,
     julia_init(JL_IMAGE_JULIA_HOME);
     jl_exception_clear();
 }
-*/
 
-JL_DLLEXPORT void jl_init_with_image(const char *julia_bindir,
-                                     const char *image_relative_path)
+//SC INIT:
+JL_DLLEXPORT void jl_init_with_image_SC(const char *julia_bindir,
+                                     const char *image_relative_path,
+                                     World* inWorld,
+                                     InterfaceTable* inFt)
 {
+    printf("SUPERCOLLIDER INIT JULIA\n");
+    if(!SCWorld)
+        SCWorld = inWorld;
+    if(!ft)
+        ft = inFt;
+
     if (jl_is_initialized())
         return;
     libsupport_init();

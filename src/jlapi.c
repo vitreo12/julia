@@ -65,11 +65,11 @@ JL_DLLEXPORT void jl_init_with_image_SC(const char *julia_bindir,
                                      World* inWorld,
                                      InterfaceTable* inFt)
 {
-    printf("SUPERCOLLIDER INIT JULIA\n");
+    printf("Init Julia with Supercollider's World and InterfaceTable pointers\n");
     if(!SCWorld)
         SCWorld = inWorld;
-    if(!ft)
-        ft = inFt;
+    if(!SCInterfaceTable)
+        SCInterfaceTable = inFt;
 
     if (jl_is_initialized())
         return;
@@ -90,7 +90,7 @@ JL_DLLEXPORT void jl_check_SC_world_and_ft(World* inWorld, InterfaceTable* inFt)
     else
         printf("DIFFERENT WORLD\n");
 
-    if(ft == inFt)
+    if(SCInterfaceTable == inFt)
         printf("SAME INTERFACE TABLE\n");
     else
         printf("DIFFERENT INTERFACE TABLE\n");

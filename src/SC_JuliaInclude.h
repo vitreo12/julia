@@ -41,6 +41,22 @@ typedef void (*BufGenFunc)(World *world, SndBuf *buf, sc_msg_iter *msg);
 typedef bool (*AsyncStageFn)(World *inWorld, void* cmdData);
 typedef void (*AsyncFreeFn)(World *inWorld, void* cmdData);
 
+enum SCFFT_Direction
+{
+	kForward = 1,
+	kBackward = 0
+};
+
+enum SCFFT_WindowFunction
+{
+	kRectWindow = -1,
+	kSineWindow = 0,
+	kHannWindow = 1
+};
+
+typedef enum SCFFT_Direction SCFFT_Direction;
+typedef enum SCFFT_WindowFunction SCFFT_WindowFunction;
+
 struct InterfaceTable
 {
 	unsigned int mSineSize;
@@ -130,8 +146,8 @@ struct InterfaceTable
 	// fBufAlloc should only be called within a BufGenFunc
 	int (*fBufAlloc)(SndBuf *inBuf, int inChannels, int inFrames, double inSampleRate);
 	
-	struct scfft * (*fSCfftCreate)(size_t fullsize, size_t winsize, enum SCFFT_WindowFunction wintype,
-					 float *indata, float *outdata, enum SCFFT_Direction forward, SCFFT_Allocator* alloc);
+	struct scfft * (*fSCfftCreate)(size_t fullsize, size_t winsize, SCFFT_WindowFunction wintype,
+					 float *indata, float *outdata, SCFFT_Direction forward, SCFFT_Allocator* alloc);
 
 	void (*fSCfftDoFFT)(struct scfft *f);
 	void (*fSCfftDoIFFT)(struct scfft *f);
@@ -150,11 +166,11 @@ typedef struct InterfaceTable InterfaceTable;
 //They will be pointing to server's ones at Julia boot.
 //static will assure just one global state.
 static World* SCWorld;
-static InterfaceTable* ft;
+static InterfaceTable* SCInterfaceTable;
 
-#define SC_RTAlloc (*ft->fRTAlloc)
-#define SC_RTRealloc (*ft->fRTRealloc)
-#define SC_RTFree (*ft->fRTFree)
+#define SC_RTAlloc (*SCInterfaceTable->fRTAlloc)
+#define SC_RTRealloc (*SCInterfaceTable->fRTRealloc)
+#define SC_RTFree (*SCInterfaceTable->fRTFree)
 
 static inline void* SC_RTCalloc(World* inWorld, size_t nitems, size_t inSize)
 {

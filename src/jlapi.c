@@ -102,7 +102,7 @@ JL_DLLEXPORT void jl_SC_alloc(int size_alloc)
     for(int i = 0; i < size_alloc; i++)
     {
         memory_allocated[i] = (float)i;
-        printf("VALUE IN ARRAY: %f\n", memory_allocated[i]);
+        printf("Value in SC allocated memory array: %f\n", memory_allocated[i]);
     }
 }
 

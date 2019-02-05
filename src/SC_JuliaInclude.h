@@ -9,8 +9,6 @@
 # include <stdbool.h>
 #endif // __cplusplus
 
-typedef int SCErr;
-
 typedef  int64_t  int64;
 typedef uint64_t uint64;
 
@@ -26,137 +24,22 @@ typedef uint8_t uint8;
 typedef float float32;
 typedef double float64;
 
-typedef union {
-	uint32 u;
-	int32 i;
-	float32 f;
-} elem32;
-
-typedef union {
-	uint64 u;
-	int64 i;
-	float64 f;
-} elem64;
-
-#ifdef __GXX_EXPERIMENTAL_CXX0X__
-#define sc_typeof_cast(x) (decltype(x))
-#elif defined(__GNUC__)
-#define sc_typeof_cast(x) (__typeof__(x))
-#else
-#define sc_typeof_cast(x) /* (typeof(x)) */
-#endif
-
-enum { calc_ScalarRate, calc_BufRate, calc_FullRate, calc_DemandRate };
-
-struct Rate
-{
-	double mSampleRate; // samples per second
-	double mSampleDur;  // seconds per sample
-	double mBufDuration; // seconds per buffer
-	double mBufRate;	// buffers per second
-	double mSlopeFactor;  // 1. / NumSamples
-	double mRadiansPerSample; // 2pi / SampleRate
-	int mBufLength;	// length of the buffer
-	// second order filter loops are often unrolled by 3
-	int mFilterLoops, mFilterRemain;
-	double mFilterSlope;
-};
-
-typedef struct Rate Rate;
-
-struct World
-{
-	// a pointer to private implementation, not available to plug-ins.
-	struct HiddenWorld *hw;
-
-	// a pointer to the table of function pointers that implement the plug-ins'
-	// interface to the server.
-	struct InterfaceTable *ft;
-
-	// data accessible to plug-ins :
-	double mSampleRate;
-	int mBufLength;
-	int mBufCounter;
-
-	uint32 mNumAudioBusChannels;
-	uint32 mNumControlBusChannels;
-	uint32 mNumInputs;
-	uint32 mNumOutputs;
-
-	// vector of samples for all audio busses
-	float *mAudioBus;
-
-	// vector of samples for all control busses
-	float *mControlBus;
-
-	// these tell if a bus has been written to during a control period
-	// if the value is equal to mBufCounter then the buss has been touched
-	// this control period.
-	int32 *mAudioBusTouched;
-	int32 *mControlBusTouched;
-
-	uint32 mNumSndBufs;
-	struct SndBuf *mSndBufs;
-	struct SndBuf *mSndBufsNonRealTimeMirror;
-	struct SndBufUpdates *mSndBufUpdates;
-
-	struct Group *mTopGroup;
-
-	Rate mFullRate, mBufRate;
-
-	uint32 mNumRGens;
-	struct RGen* mRGen;
-
-	uint32 mNumUnits, mNumGraphs, mNumGroups;
-	int mSampleOffset; // offset in the buffer of current event time.
-
-	void * mNRTLock;
-
-	uint32 mNumSharedControls;
-	float *mSharedControls;
-
-	bool mRealTime;
-	bool mRunning;
-	int mDumpOSC;
-
-	void* mDriverLock;
-
-	float mSubsampleOffset; // subsample accurate offset in the buffer of current event time.
-
-	int mVerbosity;
-	int mErrorNotification;
-	int mLocalErrorNotification;
-
-	bool mRendezvous; // Allow user to disable Rendezvous
-
-	const char* mRestrictedPath; // OSC commands to read/write data can only do it within this path, if specified
-};
-
 typedef struct World World;
+typedef struct Unit Unit;
+typedef struct sc_msg_iter sc_msg_iter;
+typedef struct SndBuf SndBuf;
+typedef struct Node Node;
+typedef struct FifoMsg FifoMsg;
+typedef struct SCFFT_Allocator SCFFT_Allocator;
+typedef struct ScopeBufferHnd ScopeBufferHnd;
 
-typedef void (*UnitCtorFunc)(struct Unit* inUnit);
-typedef void (*UnitDtorFunc)(struct Unit* inUnit);
-typedef void (*PlugInCmdFunc)(World *inWorld, void* inUserData, struct sc_msg_iter *args, void *replyAddr);
-typedef void (*UnitCmdFunc)(struct Unit *unit, struct sc_msg_iter *args);
-typedef void (*BufGenFunc)(World *world, struct SndBuf *buf, struct sc_msg_iter *msg);
+typedef void (*UnitCtorFunc)(Unit* inUnit);
+typedef void (*UnitDtorFunc)(Unit* inUnit);
+typedef void (*PlugInCmdFunc)(World *inWorld, void* inUserData, sc_msg_iter *args, void *replyAddr);
+typedef void (*UnitCmdFunc)(Unit *unit, sc_msg_iter *args);
+typedef void (*BufGenFunc)(World *world, SndBuf *buf, sc_msg_iter *msg);
 typedef bool (*AsyncStageFn)(World *inWorld, void* cmdData);
 typedef void (*AsyncFreeFn)(World *inWorld, void* cmdData);
-
-enum SCFFT_Direction
-{
-	kForward = 1,
-	kBackward = 0
-};
-
-enum SCFFT_WindowFunction
-{
-	kRectWindow = -1,
-	kSineWindow = 0,
-	kHannWindow = 1
-};
-
-typedef enum SCFFT_Direction SCFFT_Direction;
-typedef enum SCFFT_WindowFunction SCFFT_WindowFunction;
 
 struct InterfaceTable
 {
@@ -185,7 +68,7 @@ struct InterfaceTable
 	bool (*fDefineBufGen)(const char *inName, BufGenFunc inFunc);
 
 	// clear all of the unit's outputs.
-	void (*fClearUnitOutputs)(struct Unit *inUnit, int inNumSamples);
+	void (*fClearUnitOutputs)(Unit *inUnit, int inNumSamples);
 
 	// non real time memory allocation
 	void* (*fNRTAlloc)(size_t inSize);
@@ -198,27 +81,27 @@ struct InterfaceTable
 	void  (*fRTFree)(World *inWorld, void *inPtr);
 
 	// call to set a Node to run or not.
-	void (*fNodeRun)(struct Node* node, int run);
+	void (*fNodeRun)(Node* node, int run);
 
 	// call to stop a Graph after the next buffer.
-	void (*fNodeEnd)(struct Node* graph);
+	void (*fNodeEnd)(Node* graph);
 
 	// send a trigger from a Node to clients
-	void (*fSendTrigger)(struct Node* inNode, int triggerID, float value);
+	void (*fSendTrigger)(Node* inNode, int triggerID, float value);
 
 	// send a reply message from a Node to clients
-	void (*fSendNodeReply)(struct Node* inNode, int replyID, const char* cmdName, int numArgs, const float* values);
+	void (*fSendNodeReply)(Node* inNode, int replyID, const char* cmdName, int numArgs, const float* values);
 
 	// sending messages between real time and non real time levels.
-	bool (*fSendMsgFromRT)(World *inWorld, struct FifoMsg* inMsg);
-	bool (*fSendMsgToRT)(World *inWorld, struct FifoMsg* inMsg);
+	bool (*fSendMsgFromRT)(World *inWorld, FifoMsg* inMsg);
+	bool (*fSendMsgToRT)(World *inWorld, FifoMsg* inMsg);
 
 	// libsndfile support
 	int (*fSndFileFormatInfoFromStrings)(struct SF_INFO *info,
 		const char *headerFormatString, const char *sampleFormatString);
 
 	// get nodes by id
-	struct Node* (*fGetNode)(World *inWorld, int inID);
+	Node* (*fGetNode)(World *inWorld, int inID);
 	struct Graph* (*fGetGraph)(World *inWorld, int inID);
 
 	void (*fNRTLock)(World *inWorld);
@@ -227,7 +110,7 @@ struct InterfaceTable
 	bool mUnused0;
 
 	void (*fGroup_DeleteAll)(struct Group* group);
-	void (*fDoneAction)(int doneAction, struct Unit *unit);
+	void (*fDoneAction)(int doneAction, Unit *unit);
 
 	int (*fDoAsynchronousCommand)
 		(
@@ -245,21 +128,21 @@ struct InterfaceTable
 
 
 	// fBufAlloc should only be called within a BufGenFunc
-	int (*fBufAlloc)(struct SndBuf *inBuf, int inChannels, int inFrames, double inSampleRate);
+	int (*fBufAlloc)(SndBuf *inBuf, int inChannels, int inFrames, double inSampleRate);
 	
-	struct scfft * (*fSCfftCreate)(size_t fullsize, size_t winsize, SCFFT_WindowFunction wintype,
-					 float *indata, float *outdata, SCFFT_Direction forward, struct SCFFT_Allocator* alloc);
+	struct scfft * (*fSCfftCreate)(size_t fullsize, size_t winsize, enum SCFFT_WindowFunction wintype,
+					 float *indata, float *outdata, enum SCFFT_Direction forward, SCFFT_Allocator* alloc);
 
 	void (*fSCfftDoFFT)(struct scfft *f);
 	void (*fSCfftDoIFFT)(struct scfft *f);
 
 	// destroy any resources held internally.
-	void (*fSCfftDestroy)(struct scfft *f, struct SCFFT_Allocator* alloc);
+	void (*fSCfftDestroy)(struct scfft *f, SCFFT_Allocator* alloc);
 
 	// Get scope buffer. Returns the maximum number of possile frames.
-	bool (*fGetScopeBuffer)(World *inWorld, int index, int channels, int maxFrames, struct ScopeBufferHnd* bufHand);
-	void (*fPushScopeBuffer)(World *inWorld, struct ScopeBufferHnd* bufHand, int frames);
-	void (*fReleaseScopeBuffer)(World *inWorld, struct ScopeBufferHnd* bufHand);
+	bool (*fGetScopeBuffer)(World *inWorld, int index, int channels, int maxFrames, ScopeBufferHnd* bufHand);
+	void (*fPushScopeBuffer)(World *inWorld, ScopeBufferHnd* bufHand, int frames);
+	void (*fReleaseScopeBuffer)(World *inWorld, ScopeBufferHnd* bufHand);
 };
 
 typedef struct InterfaceTable InterfaceTable;
@@ -268,10 +151,6 @@ typedef struct InterfaceTable InterfaceTable;
 //static will assure just one global state.
 static World* SCWorld;
 static InterfaceTable* ft;
-
-#define SC_NRTAlloc (*ft->fNRTAlloc)
-#define SC_NRTRealloc (*ft->fNRTRealloc)
-#define SC_NRTFree (*ft->fNRTFree)
 
 #define SC_RTAlloc (*ft->fRTAlloc)
 #define SC_RTRealloc (*ft->fRTRealloc)

@@ -17,10 +17,7 @@ FLAGS := \
 	-D_GNU_SOURCE -I$(BUILDDIR) -I$(SRCDIR) \
 	-I$(SRCDIR)/flisp -I$(SRCDIR)/support \
 	-I$(LIBUV_INC) -I$(build_includedir) -DLIBRARY_EXPORTS \
-	-I$(JULIAHOME)/deps/valgrind \
-	-I$(SC_PATH)/include/plugin_interface \
-	-I$(SC_PATH)/include/common \
-	-I$(SC_PATH)/common
+	-I$(JULIAHOME)/deps/valgrind
 ifneq ($(USEMSVC), 1)
 FLAGS += -Wall -Wno-strict-aliasing -fno-omit-frame-pointer -fvisibility=hidden -fno-common \
 		 -Wpointer-arith -Wundef

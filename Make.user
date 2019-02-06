@@ -1,4 +1,3 @@
 JULIA_THREADS=0
 MARCH=native
 JULIA_CPU_TARGET=native
-SC_PATH='/home/francesco/Sources/SuperCollider-3.10.0'

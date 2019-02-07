@@ -194,8 +194,8 @@ static inline int SC_posix_memalign(World* inWorld, void **res, size_t align, si
 	unsigned char *mem, *newAlloc, *end;
 	size_t header, footer;
 
-	if ((align & -align) != align) return 22; //it was 22 in original
-	if (len > SIZE_MAX - align) return 12; //it was 12 in original
+	if ((align & -align) != align) return EINVAL;
+	if (len > SIZE_MAX - align) return ENOMEM;
 
 	if (align <= 4*sizeof(size_t)) {
 		if (!(mem = SC_RTAlloc(inWorld, len)))

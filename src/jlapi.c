@@ -96,13 +96,27 @@ JL_DLLEXPORT void jl_check_SC_world_and_ft(World* inWorld, InterfaceTable* inFt)
         printf("DIFFERENT INTERFACE TABLE\n");
 }
 
-JL_DLLEXPORT void jl_SC_alloc(int size_alloc)
+JL_DLLEXPORT void jl_SC_alloc(int malloc_or_calloc, int size_alloc)
 {
-    float* memory_allocated = (float*)SC_RTAlloc(SCWorld, size_alloc * sizeof(float));
-    for(int i = 0; i < size_alloc; i++)
+    if(malloc_or_calloc == 0)
     {
-        memory_allocated[i] = (float)i;
-        printf("Value in SC allocated memory array: %f\n", memory_allocated[i]);
+        printf("SC MALLOC called: \n");
+        float* memory_allocated = (float*)SC_RTAlloc(SCWorld, size_alloc * sizeof(float));
+        for(int i = 0; i < size_alloc; i++)
+        {
+            memory_allocated[i] = (float)i;
+            printf("Value in SC allocated memory array: %f\n", memory_allocated[i]);
+        }
+    }
+    else
+    {
+        printf("SC CALLOC called: \n");
+        float* memory_allocated = (float*)SC_RTCalloc(SCWorld, size_alloc, sizeof(float));
+        for(int i = 0; i < size_alloc; i++)
+        {
+            memory_allocated[i] = (float)i;
+            printf("Value in SC allocated memory array: %f\n", memory_allocated[i]);
+        }
     }
 }
 

@@ -1,6 +1,8 @@
 #ifndef SC_JULIA_INCLUDE_H
 #define SC_JULIA_INCLUDE_H
 
+#include <stdlib.h>
+#include <errno.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
@@ -176,9 +178,57 @@ static inline void* SC_RTCalloc(World* inWorld, size_t nitems, size_t inSize)
 {
 	size_t length = inSize * nitems;
 	void* alloc_memory = SC_RTAlloc(inWorld, length);
+	
 	if(alloc_memory)
 		memset(alloc_memory, 0, length);
+	if(!alloc_memory)
+		return NULL;
+
 	return alloc_memory;
+}
+
+//ADD CREDITS:
+//https://github.com/chneukirchen/musl-chris2/blob/master/src/malloc/posix_memalign.c
+static inline int SC_posix_memalign(World* inWorld, void **res, size_t align, size_t len)
+{
+	unsigned char *mem, *newAlloc, *end;
+	size_t header, footer;
+
+	if ((align & -align) != align) return 22; //it was 22 in original
+	if (len > SIZE_MAX - align) return 12; //it was 12 in original
+
+	if (align <= 4*sizeof(size_t)) {
+		if (!(mem = SC_RTAlloc(inWorld, len)))
+			return errno;
+		*res = mem;
+		return 0;
+	}
+
+	if (!(mem = SC_RTAlloc(inWorld, len + align-1)))
+		return errno;
+
+	header = ((size_t *)mem)[-1];
+	end = mem + (header & -8);
+	footer = ((size_t *)end)[-2];
+	newAlloc = (void *)((uintptr_t)mem + align-1 & -align);
+
+	if (!(header & 7)) {
+		((size_t *)newAlloc)[-2] = ((size_t *)mem)[-2] + (newAlloc-mem);
+		((size_t *)newAlloc)[-1] = ((size_t *)mem)[-1] - (newAlloc-mem);
+		*res = newAlloc;
+		return 0;
+	}
+
+	((size_t *)mem)[-1] = header&7 | newAlloc-mem;
+	((size_t *)newAlloc)[-2] = footer&7 | newAlloc-mem;
+	((size_t *)newAlloc)[-1] = header&7 | end-newAlloc;
+	((size_t *)end)[-2] = footer&7 | end-newAlloc;
+
+	if (newAlloc != mem) 
+		SC_RTFree(inWorld, mem);
+
+	*res = newAlloc;
+	return 0;
 }
 
 #endif

@@ -128,12 +128,11 @@ JL_DLLEXPORT void jl_SC_alloc(int malloc_or_calloc, int size_alloc)
 
 JL_DLLEXPORT void jl_SC_posix_memalign(size_t align, size_t size_alloc)
 {
-    float* memory_allocated_RTAlloc;
-    float* memory_allocated_SC;
-    float* memory_allocated;
+    float* memory_allocated_RTAlloc = NULL;
+    float* memory_allocated_SC = NULL;
+    float* memory_allocated = NULL;
     
     printf("Initial addresses: RT: %i, SC_posix_memalign: %i, standard_posix_memalign: %i\n", (uintptr_t)(void*)memory_allocated_RTAlloc, (uintptr_t)(void*)memory_allocated_SC, (uintptr_t)(void*)memory_allocated);
-
 
     memory_allocated_RTAlloc = (float*)SC_RTAlloc(SCWorld, size_alloc * sizeof(float));
 
@@ -191,7 +190,7 @@ JL_DLLEXPORT void jl_SC_posix_memalign(size_t align, size_t size_alloc)
     if ((uintptr_t)(void*)memory_allocated % align == 0) 
         printf("Standard memory is %i bits aligned\n", (int)align); 
 
-    printf("Final addresses: RT: %i, SC_posix_memalign: %i, standard_posix_memalign: %i\n", (uintptr_t)(void*)memory_allocated_RTAlloc, (uintptr_t)(void*)memory_allocated_SC, (uintptr_t)(void*)memory_allocated);
+    printf("Final addresses: RT: %lu, SC_posix_memalign: %lu, standard_posix_memalign: %lu\n", (uintptr_t)(void*)memory_allocated_RTAlloc, (uintptr_t)(void*)memory_allocated_SC, (uintptr_t)(void*)memory_allocated);
 }
 
 JL_DLLEXPORT void jl_init(void)

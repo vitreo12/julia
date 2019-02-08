@@ -1483,6 +1483,8 @@ JL_DLLEXPORT void jl_check_SC_world_and_ft(struct World* inWorld, struct Interfa
 
 JL_DLLEXPORT void jl_SC_alloc(int malloc_or_calloc, int size_alloc);
 
+JL_DLLEXPORT void jl_SC_posix_memalign(size_t align, size_t size_alloc);
+
 JL_DLLEXPORT const char *jl_get_default_sysimg_path(void);
 JL_DLLEXPORT int jl_is_initialized(void);
 JL_DLLEXPORT void jl_atexit_hook(int status);

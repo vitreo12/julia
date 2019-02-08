@@ -6,10 +6,13 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
+#include <math.h>
 
 #if !defined(__cplusplus)
 # include <stdbool.h>
 #endif // __cplusplus
+
+#define SIZE_ALIGN (4*sizeof(size_t))
 
 typedef  int64_t  int64;
 typedef uint64_t uint64;
@@ -193,26 +196,35 @@ static inline int SC_posix_memalign(World* inWorld, void **res, size_t align, si
 {
 	unsigned char *mem, *newAlloc, *end;
 	size_t header, footer;
+	
+	//this if is from libc. check if it is a power of two of size void
+	if (align % sizeof (void *) != 0 || !pow(align / sizeof (void *), 2) || align == 0)
+    	return EINVAL;
 
-	if ((align & -align) != align) return EINVAL;
-	if (len > SIZE_MAX - align) return ENOMEM;
+	if ((align & -align) != align) 
+		return EINVAL;
+	
+	if (len > SIZE_MAX - align) 
+		return ENOMEM;
 
-	if (align <= 4*sizeof(size_t)) {
+	if (align <= SIZE_ALIGN) 
+	{
 		if (!(mem = SC_RTAlloc(inWorld, len)))
-			return errno;
+			return ENOMEM;
 		*res = mem;
 		return 0;
 	}
 
 	if (!(mem = SC_RTAlloc(inWorld, len + align-1)))
-		return errno;
+		return ENOMEM;
 
 	header = ((size_t *)mem)[-1];
 	end = mem + (header & -8);
 	footer = ((size_t *)end)[-2];
 	newAlloc = (void *)((uintptr_t)mem + align-1 & -align);
 
-	if (!(header & 7)) {
+	if (!(header & 7)) 
+	{
 		((size_t *)newAlloc)[-2] = ((size_t *)mem)[-2] + (newAlloc-mem);
 		((size_t *)newAlloc)[-1] = ((size_t *)mem)[-1] - (newAlloc-mem);
 		*res = newAlloc;

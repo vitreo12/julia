@@ -100,24 +100,98 @@ JL_DLLEXPORT void jl_SC_alloc(int malloc_or_calloc, int size_alloc)
 {
     if(malloc_or_calloc == 0)
     {
-        printf("SC MALLOC called: \n");
         float* memory_allocated = (float*)SC_RTAlloc(SCWorld, size_alloc * sizeof(float));
-        for(int i = 0; i < size_alloc; i++)
+        if(memory_allocated)
         {
-            memory_allocated[i] = (float)i;
-            printf("Value in SC allocated memory array: %f\n", memory_allocated[i]);
+            printf("*** SC malloc called *** \n");
+            for(int i = 0; i < size_alloc; i++)
+            {
+                memory_allocated[i] = (float)i;
+                printf("Value in SC allocated memory array: %f\n", memory_allocated[i]);
+            }
         }
     }
     else
     {
-        printf("SC CALLOC called: \n");
         float* memory_allocated = (float*)SC_RTCalloc(SCWorld, size_alloc, sizeof(float));
+        if(memory_allocated)
+        {
+            printf("*** SC calloc called *** \n");
+            for(int i = 0; i < size_alloc; i++)
+            {
+                memory_allocated[i] = (float)i;
+                printf("Value in SC allocated memory array: %f\n", memory_allocated[i]);
+            }
+        }
+    }
+}
+
+JL_DLLEXPORT void jl_SC_posix_memalign(size_t align, size_t size_alloc)
+{
+    float* memory_allocated_RTAlloc;
+    float* memory_allocated_SC;
+    float* memory_allocated;
+    
+    printf("Initial addresses: RT: %i, SC_posix_memalign: %i, standard_posix_memalign: %i\n", (uintptr_t)(void*)memory_allocated_RTAlloc, (uintptr_t)(void*)memory_allocated_SC, (uintptr_t)(void*)memory_allocated);
+
+
+    memory_allocated_RTAlloc = (float*)SC_RTAlloc(SCWorld, size_alloc * sizeof(float));
+
+    if(memory_allocated_RTAlloc)
+    {
+        printf("*** SC malloc called *** \n");
+        /*
+        for(int i = 0; i < size_alloc; i++)
+        {
+            memory_allocated_RTAlloc[i] = (float)i;
+            printf("Value in SC RTAllocated memory array: %f\n", memory_allocated_RTAlloc[i]);
+        }
+        */
+        SC_RTFree(SCWorld, memory_allocated_RTAlloc);
+    }
+
+    if ((uintptr_t)(void*)memory_allocated_RTAlloc % align == 0) 
+        printf("SC RT memory is %i bits aligned\n", (int)align); 
+
+    int result_SC = SC_posix_memalign(SCWorld, (void(**))&memory_allocated_SC, align, size_alloc * sizeof(float));
+    if(!result_SC)
+    {
+        printf("*** SC posix memalign called *** \n");
+        /*
+        for(int i = 0; i < size_alloc; i++)
+        {
+            memory_allocated_SC[i] = (float)i;
+            printf("Value in SC posix memaligned memory array: %f\n", memory_allocated_SC[i]);
+        }
+        */
+        SC_RTFree(SCWorld, memory_allocated_SC);
+    }
+    else
+        printf("ERROR: SC posix memalign error: %i\n", result_SC);
+        
+    if ((uintptr_t)(void*)memory_allocated_SC % align == 0) 
+        printf("SC posix memalign memory is %i bits aligned\n", (int)align); 
+
+    int result = posix_memalign((void(**))&memory_allocated, align, size_alloc * sizeof(float));
+    if(!result)
+    {
+        printf("*** STANDARD posix memalign called *** \n");
+        /*
         for(int i = 0; i < size_alloc; i++)
         {
             memory_allocated[i] = (float)i;
-            printf("Value in SC allocated memory array: %f\n", memory_allocated[i]);
+            printf("Value in standard allocated memory array: %f\n", memory_allocated[i]);
         }
+        */
+        free(memory_allocated);
     }
+    else
+        printf("ERROR: Standard posix memalign error: %i\n", result);
+
+    if ((uintptr_t)(void*)memory_allocated % align == 0) 
+        printf("Standard memory is %i bits aligned\n", (int)align); 
+
+    printf("Final addresses: RT: %i, SC_posix_memalign: %i, standard_posix_memalign: %i\n", (uintptr_t)(void*)memory_allocated_RTAlloc, (uintptr_t)(void*)memory_allocated_SC, (uintptr_t)(void*)memory_allocated);
 }
 
 JL_DLLEXPORT void jl_init(void)

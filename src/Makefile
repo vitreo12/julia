@@ -44,7 +44,7 @@ SRCS := \
 	simplevector APInt-C runtime_intrinsics runtime_ccall precompile \
 	threadgroup threading stackwalk gc gc-debug gc-pages gc-stacks method \
 	jlapi signal-handling safepoint jloptions timing subtype rtutils \
-	crc32c processor
+	crc32c processor SC_Julia
 
 ifeq ($(USEMSVC), 1)
 SRCS += getopt
@@ -138,10 +138,6 @@ LLVM_CONFIG_ABSOLUTE := $(shell which $(LLVM_CONFIG))
 
 # source file rules
 $(BUILDDIR)/%.o: $(SRCDIR)/%.c $(HEADERS) | $(BUILDDIR)
-	@echo "COMPILER IS: $(CC)"
-	@echo "CPP FLAGS: $(CPPFLAGS)"
-	@echo "C FLAGS: $(CFLAGS)"
-	@echo "SHIPFLAGS: $(SHIPFLAGS)"
 	@$(call PRINT_CC, $(CC) $(CPPFLAGS) $(CFLAGS) $(SHIPFLAGS) $(DISABLE_ASSERTIONS) -c $< -o $@)
 $(BUILDDIR)/%.dbg.obj: $(SRCDIR)/%.c $(HEADERS) | $(BUILDDIR)
 	@$(call PRINT_CC, $(CC) $(CPPFLAGS) $(CFLAGS) $(DEBUGFLAGS) -c $< -o $@)

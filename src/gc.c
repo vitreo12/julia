@@ -4,6 +4,8 @@
 #include "julia_gcext.h"
 #include "julia_assert.h"
 
+#include "SC_AllocMacros.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif

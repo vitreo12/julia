@@ -3,6 +3,7 @@
 #ifndef JL_INTERNAL_H
 #define JL_INTERNAL_H
 
+#include "SC_JuliaInclude.h"
 #include "options.h"
 #include <uv.h>
 #if !defined(_MSC_VER) && !defined(__MINGW32__)
@@ -859,34 +860,81 @@ STATIC_INLINE void jl_free_aligned(void *p) JL_NOTSAFEPOINT
     _aligned_free(p);
 }
 #else
-STATIC_INLINE void *jl_malloc_aligned(size_t sz, size_t align)
+STATIC_INLINE void *jl_malloc_aligned_SC(size_t sz, size_t align)
 {
 #if defined(_P64) || defined(__APPLE__)
     if (align <= 16)
-        return malloc(sz);
+        return RTAlloc(SCWorld, sz);
 #endif
     void *ptr;
-    if (posix_memalign(&ptr, align, sz))
+    if (SC_posix_memalign(SCWorld, &ptr, align, sz))
         return NULL;
     return ptr;
 }
-STATIC_INLINE void *jl_realloc_aligned(void *d, size_t sz, size_t oldsz,
+
+STATIC_INLINE void *jl_malloc_aligned(size_t sz, size_t align)
+{
+    if(scsynthRunning)
+        return jl_malloc_aligned_SC(sz, align);
+    else
+    { 
+#if defined(_P64) || defined(__APPLE__)
+        if (align <= 16)
+            return malloc(sz);
+#endif
+        void *ptr;
+        if (posix_memalign(&ptr, align, sz))
+            return NULL;
+        return ptr;
+    }
+}
+
+STATIC_INLINE void *jl_realloc_aligned_SC(void *d, size_t sz, size_t oldsz,
                                        size_t align)
 {
 #if defined(_P64) || defined(__APPLE__)
     if (align <= 16)
-        return realloc(d, sz);
+        return RTRealloc(SCWorld, d, sz);
 #endif
     void *b = jl_malloc_aligned(sz, align);
     if (b != NULL) {
         memcpy(b, d, oldsz > sz ? sz : oldsz);
-        free(d);
+        RTFree(SCWorld, d);
     }
     return b;
 }
+
+STATIC_INLINE void *jl_realloc_aligned(void *d, size_t sz, size_t oldsz,
+                                       size_t align)
+{
+    if(scsynthRunning)
+        return jl_realloc_aligned_SC(d, sz, oldsz, align);
+    else
+    {
+#if defined(_P64) || defined(__APPLE__)
+        if (align <= 16)
+            return realloc(d, sz);
+#endif
+        void *b = jl_malloc_aligned(sz, align);
+        if (b != NULL) {
+            memcpy(b, d, oldsz > sz ? sz : oldsz);
+            free(d);
+        }
+        return b;
+    }
+}
+
+STATIC_INLINE void jl_free_aligned_SC(void *p) JL_NOTSAFEPOINT
+{
+    RTFree(SCWorld, p);
+}
+
 STATIC_INLINE void jl_free_aligned(void *p) JL_NOTSAFEPOINT
 {
-    free(p);
+    if(scsynthRunning)
+        jl_free_aligned_SC(p);
+    else
+        free(p);
 }
 #endif
 

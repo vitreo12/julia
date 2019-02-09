@@ -5,6 +5,8 @@
 #  include <sys/resource.h>
 #endif
 
+#include "SC_AllocMacros.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif

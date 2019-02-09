@@ -19,11 +19,15 @@ typedef struct {
 } arraylist_t;
 
 arraylist_t *arraylist_new(arraylist_t *a, size_t size);
+arraylist_t *arraylist_new_SC(arraylist_t *a, size_t size);
 void arraylist_free(arraylist_t *a);
+void arraylist_free_SC(arraylist_t *a);
 
+void arraylist_push(arraylist_t *a, void *elt) JL_NOTSAFEPOINT;
 void arraylist_push(arraylist_t *a, void *elt) JL_NOTSAFEPOINT;
 void *arraylist_pop(arraylist_t *a);
 void arraylist_grow(arraylist_t *a, size_t n);
+void arraylist_grow_SC(arraylist_t *a, size_t n);
 
 #ifdef __cplusplus
 }

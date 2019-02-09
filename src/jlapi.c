@@ -66,6 +66,8 @@ JL_DLLEXPORT void jl_init_with_image_SC(const char *julia_bindir,
                                      InterfaceTable* inFt)
 {
     printf("Init Julia with Supercollider's World and InterfaceTable pointers\n");
+    if(!scsynthRunning)
+        scsynthRunning = 0;
     if(!SCWorld)
         SCWorld = inWorld;
     if(!SCInterfaceTable)
@@ -85,6 +87,8 @@ JL_DLLEXPORT void jl_init_with_image_SC(const char *julia_bindir,
 
 JL_DLLEXPORT void jl_check_SC_world_and_ft(World* inWorld, InterfaceTable* inFt)
 {
+    printf("Has Julia been booted in scsynth? %i\n", scsynthRunning);
+
     if(SCWorld == inWorld)
         printf("SAME WORLD\n");
     else
@@ -100,7 +104,7 @@ JL_DLLEXPORT void jl_SC_alloc(int malloc_or_calloc, int size_alloc)
 {
     if(malloc_or_calloc == 0)
     {
-        float* memory_allocated = (float*)SC_RTAlloc(SCWorld, size_alloc * sizeof(float));
+        float* memory_allocated = (float*)RTAlloc(SCWorld, size_alloc * sizeof(float));
         if(memory_allocated)
         {
             printf("*** SC malloc called *** \n");
@@ -113,7 +117,7 @@ JL_DLLEXPORT void jl_SC_alloc(int malloc_or_calloc, int size_alloc)
     }
     else
     {
-        float* memory_allocated = (float*)SC_RTCalloc(SCWorld, size_alloc, sizeof(float));
+        float* memory_allocated = (float*)RTCalloc(SCWorld, size_alloc, sizeof(float));
         if(memory_allocated)
         {
             printf("*** SC calloc called *** \n");
@@ -134,7 +138,7 @@ JL_DLLEXPORT void jl_SC_posix_memalign(size_t align, size_t size_alloc)
     
     printf("Initial addresses: RT: %i, SC_posix_memalign: %i, standard_posix_memalign: %i\n", (uintptr_t)(void*)memory_allocated_RTAlloc, (uintptr_t)(void*)memory_allocated_SC, (uintptr_t)(void*)memory_allocated);
 
-    memory_allocated_RTAlloc = (float*)SC_RTAlloc(SCWorld, size_alloc * sizeof(float));
+    memory_allocated_RTAlloc = (float*)RTAlloc(SCWorld, size_alloc * sizeof(float));
 
     if(memory_allocated_RTAlloc)
     {
@@ -146,7 +150,7 @@ JL_DLLEXPORT void jl_SC_posix_memalign(size_t align, size_t size_alloc)
             printf("Value in SC RTAllocated memory array: %f\n", memory_allocated_RTAlloc[i]);
         }
         */
-        SC_RTFree(SCWorld, memory_allocated_RTAlloc);
+        RTFree(SCWorld, memory_allocated_RTAlloc);
     }
 
     if ((uintptr_t)(void*)memory_allocated_RTAlloc % align == 0) 
@@ -163,7 +167,7 @@ JL_DLLEXPORT void jl_SC_posix_memalign(size_t align, size_t size_alloc)
             printf("Value in SC posix memaligned memory array: %f\n", memory_allocated_SC[i]);
         }
         */
-        SC_RTFree(SCWorld, memory_allocated_SC);
+        RTFree(SCWorld, memory_allocated_SC);
     }
     else
         printf("ERROR: SC posix memalign error: %i\n", result_SC);

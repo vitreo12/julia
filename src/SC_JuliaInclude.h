@@ -172,15 +172,15 @@ typedef struct InterfaceTable InterfaceTable;
 //static will assure just one global state.
 static World* SCWorld;
 static InterfaceTable* SCInterfaceTable;
+static int scsynthRunning = 0;
 
-#define SC_RTAlloc (*SCInterfaceTable->fRTAlloc)
-#define SC_RTRealloc (*SCInterfaceTable->fRTRealloc)
-#define SC_RTFree (*SCInterfaceTable->fRTFree)
-
-static inline void* SC_RTCalloc(World* inWorld, size_t nitems, size_t inSize)
+#define RTAlloc (*SCInterfaceTable->fRTAlloc)
+#define RTRealloc (*SCInterfaceTable->fRTRealloc)
+#define RTFree (*SCInterfaceTable->fRTFree)
+static inline void* RTCalloc(World* inWorld, size_t nitems, size_t inSize)
 {
 	size_t length = inSize * nitems;
-	void* alloc_memory = SC_RTAlloc(inWorld, length);
+	void* alloc_memory = RTAlloc(inWorld, length);
 	
 	if(alloc_memory)
 		memset(alloc_memory, 0, length);
@@ -188,6 +188,38 @@ static inline void* SC_RTCalloc(World* inWorld, size_t nitems, size_t inSize)
 		return NULL;
 
 	return alloc_memory;
+}
+
+static inline void* SC_RTMalloc(World* inWorld, size_t inSize)
+{
+	if(scsynthRunning)
+		return RTAlloc(inWorld, inSize);
+	else
+		return malloc(inSize);
+}
+
+static inline void* SC_RTRealloc(World* inWorld, void *inPtr, size_t inSize)
+{
+	if(scsynthRunning)
+		return RTRealloc(inWorld, inPtr, inSize);
+	else
+		return realloc(inPtr, inSize);
+}
+
+static inline void SC_RTFree(World* inWorld, void* inPtr)
+{
+	if(scsynthRunning)
+		RTFree(inWorld, inPtr);
+	else
+		free(inPtr);
+}
+
+static inline void* SC_RTCalloc(World* inWorld, size_t nitems, size_t inSize)
+{
+	if(scsynthRunning)
+		return RTCalloc(inWorld, nitems, inSize);
+	else
+		return calloc(nitems, inSize);
 }
 
 //ADD CREDITS:
@@ -209,19 +241,19 @@ static inline int SC_posix_memalign(World* inWorld, void **res, size_t align, si
 
 	if (align <= SIZE_ALIGN) 
 	{
-		if (!(mem = SC_RTAlloc(inWorld, len)))
+		if (!(mem = (unsigned char*)RTAlloc(inWorld, len)))
 			return ENOMEM;
 		*res = mem;
 		return 0;
 	}
 
-	if (!(mem = SC_RTAlloc(inWorld, len + align-1)))
+	if (!(mem = (unsigned char*)RTAlloc(inWorld, len + align-1)))
 		return ENOMEM;
 
 	header = ((size_t *)mem)[-1];
 	end = mem + (header & -8);
 	footer = ((size_t *)end)[-2];
-	newAlloc = (void *)((uintptr_t)mem + align-1 & -align);
+	newAlloc = (unsigned char*)(void *)((uintptr_t)mem + align-1 & -align);
 
 	if (!(header & 7)) 
 	{
@@ -237,7 +269,7 @@ static inline int SC_posix_memalign(World* inWorld, void **res, size_t align, si
 	((size_t *)end)[-2] = footer&7 | end-newAlloc;
 
 	if (newAlloc != mem) 
-		SC_RTFree(inWorld, mem);
+		RTFree(inWorld, mem);
 
 	*res = newAlloc;
 	return 0;

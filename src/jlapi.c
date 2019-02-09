@@ -8,7 +8,7 @@
 #include "platform.h"
 
 //SC STUFF
-#include "SC_JuliaInclude.h"
+#include "SC_Julia.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -65,16 +65,18 @@ JL_DLLEXPORT void jl_init_with_image_SC(const char *julia_bindir,
                                      World* inWorld,
                                      InterfaceTable* inFt)
 {
-    printf("Init Julia with Supercollider's World and InterfaceTable pointers\n");
+    if (jl_is_initialized())
+        return;
+
+    printf("Init Julia with Supercollider's World and InterfaceTable pointers\n");   
     if(!scsynthRunning)
-        scsynthRunning = 0;
+        scsynthRunning = 1;
     if(!SCWorld)
         SCWorld = inWorld;
     if(!SCInterfaceTable)
         SCInterfaceTable = inFt;
 
-    if (jl_is_initialized())
-        return;
+    printf("BOOT scsynthRunning: %i", scsynthRunning);
     libsupport_init();
     jl_options.julia_bindir = julia_bindir;
     if (image_relative_path != NULL)

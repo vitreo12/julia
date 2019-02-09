@@ -9,7 +9,7 @@
 #include "dtypes.h"
 #include "arraylist.h"
 
-#include "../SC_JuliaInclude.h"
+#include "../SC_Julia.h"
 
 #ifdef __cplusplus
 extern "C" {

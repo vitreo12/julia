@@ -3,7 +3,7 @@
 #ifndef JL_INTERNAL_H
 #define JL_INTERNAL_H
 
-#include "SC_JuliaInclude.h"
+#include "SC_Julia.h"
 #include "options.h"
 #include <uv.h>
 #if !defined(_MSC_VER) && !defined(__MINGW32__)
@@ -862,6 +862,7 @@ STATIC_INLINE void jl_free_aligned(void *p) JL_NOTSAFEPOINT
 #else
 STATIC_INLINE void *jl_malloc_aligned_SC(size_t sz, size_t align)
 {
+    printf("scsynth in julia, %i : SC MALLOC ALIGNED\n", scsynthRunning);
 #if defined(_P64) || defined(__APPLE__)
     if (align <= 16)
         return RTAlloc(SCWorld, sz);
@@ -878,6 +879,7 @@ STATIC_INLINE void *jl_malloc_aligned(size_t sz, size_t align)
         return jl_malloc_aligned_SC(sz, align);
     else
     { 
+        printf("scsynth in julia, %i : NORMAL MALLOC ALIGNED\n", scsynthRunning);
 #if defined(_P64) || defined(__APPLE__)
         if (align <= 16)
             return malloc(sz);

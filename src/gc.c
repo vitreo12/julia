@@ -4,6 +4,7 @@
 #include "julia_gcext.h"
 #include "julia_assert.h"
 
+//Macros as last include to #define all the malloc, realloc, calloc and free calls in gc.c
 #include "SC_AllocMacros.h"
 
 #ifdef __cplusplus
@@ -1001,24 +1002,29 @@ static void jl_gc_free_array(jl_array_t *a) JL_NOTSAFEPOINT
 {
     printf("*** ENTER jl_gc_free_array ***\n");
     //how == 2 means that data is a "malloc-allocated pointer this array object manages"
+    //OR, in the case of using Julia inside of SC, it also relates to memory allocated with RTAlloc.
     if (a->flags.how == 2) {
         char *d = (char*)a->data - a->offset*a->elsize;
+        /* IMPORTANT NOTES: */
+        /********************************************************************
+        Aligned arrays are only allocated inside of Julia itself.
+        (For now, at least. It should be a future feature to pass in already 
+        allocated memaligned arrays). The void* data is allocated as such: 
+        new_array -> jl_gc_managed_malloc -> malloc_cache_align. 
+        Since malloc_cache_align() calls will allocate into the SC RT allocator, 
+        it is safe to say that when arrays are not aligned, they 
+        were allocated outside of the GC and just wrapped with jl_ptr_to_array()
+        with the own_buffer = 1 argument, which would also set flags.how = 2.
+        If the array is not aligned, then, it would finally mean that the GC would call 
+        the standard free() function to free external malloc-allocated 
+        memory when also sweeping the GC allocated one. 
+        ********************************************************************/
         if (a->flags.isaligned)
-        {
-            printf("*** ENTER is_aligned ***\n");
             jl_free_aligned(d);
-        }
         else
         {
-            /* FOUND THE ROOT OF THE SEGFAULTS!!!!!!!!!!!!!!!!!! */
-            //The array (that segfaults) passed in here is created with jl_ptr_to_array_1d, with the own_buffer flag = 1, on elsewhere malloc() memory.
-            //GC has taken control of the memory, and it would call free (right here), but, that memory wasn't RTAlloc. 
-            //Memory was allocated outside of the GC, and added to GC control with the jl_gc_track_malloced_array() function. 
-            printf("*** ENTER else statement ***\n");
-            //Very horrible workaround... #undef free (which expands to SC_RTFree(SCWorld, p)) and redefine it soon after.
-            #undef free
-            free(d); //standard free() called here...
-            #define free(p) SC_RTFree(SCWorld, p)
+            printf("ERROR: FREE STANDARD \n");
+            free_standard(d);
         }
         gc_num.freed += array_nbytes(a);
     }

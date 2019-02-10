@@ -103,3 +103,8 @@ inline int SC_posix_memalign(World* inWorld, void **res, size_t align, size_t le
 	*res = newAlloc;
 	return 0;
 }
+
+extern inline void free_standard(void* inPtr)
+{
+	free(inPtr);
+}

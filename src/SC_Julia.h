@@ -181,6 +181,9 @@ extern inline void* SC_RTCalloc(World* inWorld, size_t nitems, size_t inSize);
 //ADD CREDITS: https://github.com/chneukirchen/musl-chris2/blob/master/src/malloc/posix_memalign.c
 extern inline int SC_posix_memalign(World* inWorld, void **res, size_t align, size_t len);
 
+//Standard free() call
+extern inline void free_standard(void* inPtr);
+
 /* GLOBAL VARIABLES */
 extern World* SCWorld;
 extern InterfaceTable* SCInterfaceTable;

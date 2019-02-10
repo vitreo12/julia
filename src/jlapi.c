@@ -76,7 +76,7 @@ JL_DLLEXPORT void jl_init_with_image_SC(const char *julia_bindir,
     if(!SCInterfaceTable)
         SCInterfaceTable = inFt;
 
-    printf("BOOT scsynthRunning: %i", scsynthRunning);
+    printf("BOOT scsynthRunning: %i\n", scsynthRunning);
     libsupport_init();
     jl_options.julia_bindir = julia_bindir;
     if (image_relative_path != NULL)

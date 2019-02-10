@@ -862,7 +862,7 @@ STATIC_INLINE void jl_free_aligned(void *p) JL_NOTSAFEPOINT
 #else
 STATIC_INLINE void *jl_malloc_aligned_SC(size_t sz, size_t align)
 {
-    printf("scsynth in julia, %i : SC MALLOC ALIGNED\n", scsynthRunning);
+    //printf("scsynth in julia, %i : SC MALLOC ALIGNED\n", scsynthRunning);
 #if defined(_P64) || defined(__APPLE__)
     if (align <= 16)
         return RTAlloc(SCWorld, sz);
@@ -879,7 +879,7 @@ STATIC_INLINE void *jl_malloc_aligned(size_t sz, size_t align)
         return jl_malloc_aligned_SC(sz, align);
     else
     { 
-        printf("scsynth in julia, %i : NORMAL MALLOC ALIGNED\n", scsynthRunning);
+        //printf("scsynth in julia, %i : NORMAL MALLOC ALIGNED\n", scsynthRunning);
 #if defined(_P64) || defined(__APPLE__)
         if (align <= 16)
             return malloc(sz);

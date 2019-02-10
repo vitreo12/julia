@@ -999,19 +999,36 @@ static size_t array_nbytes(jl_array_t *a) JL_NOTSAFEPOINT
 
 static void jl_gc_free_array(jl_array_t *a) JL_NOTSAFEPOINT
 {
+    printf("*** ENTER jl_gc_free_array ***\n");
+    //how == 2 means that data is a "malloc-allocated pointer this array object manages"
     if (a->flags.how == 2) {
         char *d = (char*)a->data - a->offset*a->elsize;
         if (a->flags.isaligned)
+        {
+            printf("*** ENTER is_aligned ***\n");
             jl_free_aligned(d);
+        }
         else
-            free(d);
+        {
+            /* FOUND THE ROOT OF THE SEGFAULTS!!!!!!!!!!!!!!!!!! */
+            //The array (that segfaults) passed in here is created with jl_ptr_to_array_1d, with the own_buffer flag = 1, on elsewhere malloc() memory.
+            //GC has taken control of the memory, and it would call free (right here), but, that memory wasn't RTAlloc. 
+            //Memory was allocated outside of the GC, and added to GC control with the jl_gc_track_malloced_array() function. 
+            printf("*** ENTER else statement ***\n");
+            //Very horrible workaround... #undef free (which expands to SC_RTFree(SCWorld, p)) and redefine it soon after.
+            #undef free
+            free(d); //standard free() called here...
+            #define free(p) SC_RTFree(SCWorld, p)
+        }
         gc_num.freed += array_nbytes(a);
     }
+    printf("*** EXIT jl_gc_free_array ***\n");
 }
 
 static void sweep_malloced_arrays(void) JL_NOTSAFEPOINT
 {
     gc_time_mallocd_array_start();
+    printf("*** ENTER sweep_malloced_arrays ***\n");
     for (int t_i = 0;t_i < jl_n_threads;t_i++) {
         jl_ptls_t ptls2 = jl_all_tls_states[t_i];
         mallocarray_t *ma = ptls2->heap.mallocarrays;
@@ -1033,6 +1050,7 @@ static void sweep_malloced_arrays(void) JL_NOTSAFEPOINT
             ma = nxt;
         }
     }
+    printf("*** EXIT sweep_malloced_arrays ***\n");
     gc_time_mallocd_array_end();
 }
 
@@ -1341,6 +1359,7 @@ static inline int sweep_pool_pagetable1(jl_taggedvalue_t ***pfl, pagetable1_t *p
 // sweep over all memory for all pagetable1 that may contain allocated pages
 static void sweep_pool_pagetable(jl_taggedvalue_t ***pfl, int sweep_full) JL_NOTSAFEPOINT
 {
+    printf("*** ENTER sweep_pool_pagetable ***\n");
     if (REGION2_PG_COUNT == 1) { // compile-time optimization
         pagetable1_t *pagetable1 = memory_map.meta1[0];
         sweep_pool_pagetable1(pfl, pagetable1, sweep_full);
@@ -1363,13 +1382,16 @@ static void sweep_pool_pagetable(jl_taggedvalue_t ***pfl, int sweep_full) JL_NOT
         }
     }
     memory_map.ub = ub;
+    printf("*** EXIT sweep_pool_pagetable ***\n");
 }
 
 // sweep over all memory that is being used and not in a pool
 static void gc_sweep_other(jl_ptls_t ptls, int sweep_full) JL_NOTSAFEPOINT
 {
+    printf("*** ENTER gc_sweep_other ***\n");
     sweep_malloced_arrays();
     sweep_big(ptls, sweep_full);
+    printf("*** EXIT gc_sweep_other ***\n");
 }
 
 static void gc_pool_sync_nfree(jl_gc_pagemeta_t *pg, jl_taggedvalue_t *last) JL_NOTSAFEPOINT
@@ -1391,6 +1413,7 @@ static void gc_pool_sync_nfree(jl_gc_pagemeta_t *pg, jl_taggedvalue_t *last) JL_
 // setup the data-structures for a sweep over all memory pools
 static void gc_sweep_pool(int sweep_full)
 {
+    printf("*** ENTER gc_sweep_pool ***\n");
     gc_time_pool_start();
     lazy_freed_pages = 0;
 
@@ -1440,6 +1463,7 @@ static void gc_sweep_pool(int sweep_full)
     }
 
     gc_time_pool_end(sweep_full);
+    printf("*** EXIT gc_sweep_pool ***\n");
 }
 
 static void gc_sweep_perm_alloc(void)
@@ -2673,17 +2697,18 @@ static void jl_gc_queue_bt_buf(jl_gc_mark_cache_t *gc_cache, jl_gc_mark_sp_t *sp
 // Only one thread should be running in this function
 static int _jl_gc_collect(jl_ptls_t ptls, int full)
 {
+    printf("Start\n");
     jl_gc_mark_cache_t *gc_cache = &ptls->gc_cache;
     jl_gc_mark_sp_t sp;
     gc_mark_sp_init(gc_cache, &sp);
-
+    printf("After gc_mark_sp_init\n");
     uint64_t t0 = jl_hrtime();
     int64_t last_perm_scanned_bytes = perm_scanned_bytes;
 
     // 1. fix GC bits of objects in the remset.
     for (int t_i = 0; t_i < jl_n_threads; t_i++)
         jl_gc_premark(jl_all_tls_states[t_i]);
-
+    printf("After jl_gc_premark\n");
     for (int t_i = 0; t_i < jl_n_threads; t_i++) {
         jl_ptls_t ptls2 = jl_all_tls_states[t_i];
         // 2.1. mark every object in the `last_remsets` and `rem_binding`
@@ -2693,22 +2718,29 @@ static int _jl_gc_collect(jl_ptls_t ptls, int full)
         // 2.3. mark any managed objects in the backtrace buffer
         jl_gc_queue_bt_buf(gc_cache, &sp, ptls2);
     }
-
+    printf("After jl_gc_queue_remset, jl_gc_queue_thread_local, jl_gc_queue_bt_buf\n");
     // 3. walk roots
     mark_roots(gc_cache, &sp);
+    printf("After mark_roots\n");
     if (gc_cblist_root_scanner) {
         export_gc_state(ptls, &sp);
         gc_invoke_callbacks(jl_gc_cb_root_scanner_t,
             gc_cblist_root_scanner, (full));
         import_gc_state(ptls, &sp);
     }
+    printf("After export_gc_state, gc_invoke_callbacks, import_gc_state\n");
     gc_mark_loop(ptls, sp);
+    printf("After gc_mark_loop\n");
     gc_mark_sp_init(gc_cache, &sp);
+    printf("After gc_mark_sp_init\n");
     gc_num.since_sweep += gc_num.allocd + (int64_t)gc_num.interval;
     gc_settime_premark_end();
+    printf("After gc_settime_premark_end\n");
     gc_time_mark_pause(t0, scanned_bytes, perm_scanned_bytes);
+    printf("After gc_time_mark_pause\n");
     int64_t actual_allocd = gc_num.since_sweep;
     // marking is over
+    printf("*** MARKING IS OVER ***\n");
 
     // 4. check for objects to finalize
     // Record the length of the marked list since we need to
@@ -2719,19 +2751,25 @@ static int _jl_gc_collect(jl_ptls_t ptls, int full)
         jl_ptls_t ptls2 = jl_all_tls_states[i];
         sweep_finalizer_list(&ptls2->finalizers);
     }
+    printf("After sweep_finalizer_list\n");
     if (prev_sweep_full) {
         sweep_finalizer_list(&finalizer_list_marked);
         orig_marked_len = 0;
     }
+    printf("After sweep_finalizer_list\n");
     for (int i = 0;i < jl_n_threads;i++) {
         jl_ptls_t ptls2 = jl_all_tls_states[i];
         gc_mark_queue_finlist(gc_cache, &sp, &ptls2->finalizers, 0);
     }
+    printf("After gc_mark_queue_finlist\n");
     gc_mark_queue_finlist(gc_cache, &sp, &finalizer_list_marked, orig_marked_len);
+    printf("After gc_mark_queue_finlist\n");
     // "Flush" the mark stack before flipping the reset_age bit
     // so that the objects are not incorrectly reset.
     gc_mark_loop(ptls, sp);
+    printf("After gc_mark_loop\n");
     gc_mark_sp_init(gc_cache, &sp);
+    printf("After gc_mark_sp_init\n");
     // Conservative marking relies on age to tell allocated objects
     // and freelist entries apart.
     mark_reset_age = !support_conservative_marking;
@@ -2740,23 +2778,32 @@ static int _jl_gc_collect(jl_ptls_t ptls, int full)
     // and should not be referenced by any old objects so this won't break
     // the GC invariant.
     gc_mark_queue_finlist(gc_cache, &sp, &to_finalize, 0);
+    printf("After gc_mark_queue_finlist\n");
     gc_mark_loop(ptls, sp);
+    printf("After gc_mark_loop\n");
     mark_reset_age = 0;
     gc_settime_postmark_end();
+    printf("After gc_settime_postmark_end\n");
 
     // Flush everything in mark cache
     gc_sync_all_caches_nolock(ptls);
+    printf("After gc_sync_all_caches_nolock\n");
 
     int64_t live_sz_ub = live_bytes + actual_allocd;
     int64_t live_sz_est = scanned_bytes + perm_scanned_bytes;
     int64_t estimate_freed = live_sz_ub - live_sz_est;
 
     gc_verify(ptls);
+    printf("After gc_verify\n");
 
     gc_stats_all_pool();
+    printf("After gc_stats_all_pool\n");
     gc_stats_big_obj();
+    printf("After gc_stats_big_obj\n");
     objprofile_printall();
+    printf("After objprofile_printall\n");
     objprofile_reset();
+    printf("After objprofile_reset\n");
     gc_num.total_allocd += gc_num.since_sweep;
     if (!prev_sweep_full)
         promoted_bytes += perm_scanned_bytes - last_perm_scanned_bytes;
@@ -2796,16 +2843,26 @@ static int _jl_gc_collect(jl_ptls_t ptls, int full)
     if (sweep_full)
         perm_scanned_bytes = 0;
     scanned_bytes = 0;
+    printf("*** CHECK BEFOR SWEEPING COMPLETE ***\n");
     // 5. start sweeping
     sweep_weak_refs();
+    printf("After sweep_weak_refs\n");
     sweep_stack_pools();
+    printf("After sweep_stack_pools\n");
     gc_sweep_foreign_objs();
+    printf("After gc_sweep_foreign_objs\n");
     gc_sweep_other(ptls, sweep_full);
+    printf("After gc_sweep_other\n");
     gc_scrub();
+    printf("After gc_scrub\n");
     gc_verify_tags();
+    printf("After gc_verify_tags\n");
     gc_sweep_pool(sweep_full);
+    printf("After gc_sweep_pool\n");
     if (sweep_full)
         gc_sweep_perm_alloc();
+    printf("After gc_sweep_perm_alloc\n");
+    printf("*** FINISHED SWEEPING ***\n");
     // sweeping is over
     // 6. if it is a quick sweep, put back the remembered objects in queued state
     // so that we don't trigger the barrier again on them.

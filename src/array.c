@@ -112,7 +112,6 @@ static jl_array_t *_new_array_(jl_value_t *atype, uint32_t ndims, size_t *dims,
         a = (jl_array_t*)jl_gc_alloc(ptls, tsz, atype);
         // No allocation or safepoint allowed after this
         a->flags.how = 2;
-        printf("*** new_array ***\n");
         jl_gc_track_malloced_array(ptls, a);
         if (!isunboxed || isunion)
             // need to zero out isbits union array selector bytes to ensure a valid type index
@@ -330,7 +329,6 @@ JL_DLLEXPORT jl_array_t *jl_ptr_to_array_1d(jl_value_t *atype, void *data,
     a->flags.isaligned = 0;  // TODO: allow passing memalign'd buffers
     if (own_buffer) {
         a->flags.how = 2;
-        printf("*** ptr_to_array_1d. Own buffer : %i ***\n", own_buffer);
         jl_gc_track_malloced_array(ptls, a);
         jl_gc_count_allocd(nel*elsz + (elsz == 1 ? 1 : 0));
     }
@@ -398,7 +396,6 @@ JL_DLLEXPORT jl_array_t *jl_ptr_to_array(jl_value_t *atype, void *data,
     a->flags.isaligned = 0;
     if (own_buffer) {
         a->flags.how = 2;
-        printf("*** ptr_to_array. Own buffer : %i ***\n", own_buffer);
         jl_gc_track_malloced_array(ptls, a);
         jl_gc_count_allocd(nel*elsz + (elsz == 1 ? 1 : 0));
     }
@@ -652,7 +649,6 @@ static int NOINLINE array_resize_buffer(jl_array_t *a, size_t newlen)
 #endif
             ) {
             a->data = jl_gc_managed_malloc(nbytes);
-            printf("*** array_resize_buffer ***\n");
             jl_gc_track_malloced_array(ptls, a);
             a->flags.how = 2;
             a->flags.isaligned = 1;

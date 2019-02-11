@@ -2859,6 +2859,7 @@ static int _jl_gc_collect(jl_ptls_t ptls, int full)
 JL_DLLEXPORT void jl_gc_collect(int full)
 {
     jl_ptls_t ptls = jl_get_ptls_states();
+    //If GC is disabled, don't run the collect.
     if (jl_gc_disable_counter) {
         gc_num.deferred_alloc += (gc_num.allocd + gc_num.interval);
         gc_num.allocd = -(int64_t)gc_num.interval;

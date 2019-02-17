@@ -7,23 +7,34 @@ InterfaceTable* SCInterfaceTable = NULL;
 
 /* RTALLOC WRAPPER FUNCTIONS */
 
+/* Perhaps, I could remove all these printf calls (even if wrapped in ifs). 
+Set them only if World* verbosity is > -2. (I could pass in the verbosity val at jl_init_with_image_SC()) */
+
 inline void* RTCalloc(World* inWorld, size_t nitems, size_t inSize)
 {
 	size_t length = inSize * nitems;
 	void* alloc_memory = RTAlloc(inWorld, length);
 	
-	if(alloc_memory)
-		memset(alloc_memory, 0, length);
 	if(!alloc_memory)
+	{
+		printf("ERROR: Julia could not allocate memory from real-time allocator. Run GC to free up memory.\n");
 		return NULL;
+	}
 
-	return alloc_memory;
+	memset(alloc_memory, 0, length);
+	return alloc_memory; //It would be NULL anyway if failed to allocate
 }
 
 inline void* SC_RTMalloc(World* inWorld, size_t inSize)
 {
 	if(scsynthRunning)
-		return RTAlloc(inWorld, inSize);
+	{
+		//Check if real-time allocator actually allocated anything...
+		void* alloc_memory = RTAlloc(inWorld, inSize);
+		if(!alloc_memory)
+			printf("ERROR: Julia could not allocate memory from real-time allocator. Run GC to free up memory.\n");
+		return alloc_memory; //It would be NULL anyway if failed to allocate
+	}
 	else
 		return malloc(inSize);
 }
@@ -31,7 +42,12 @@ inline void* SC_RTMalloc(World* inWorld, size_t inSize)
 inline void* SC_RTRealloc(World* inWorld, void *inPtr, size_t inSize)
 {
 	if(scsynthRunning)
-		return RTRealloc(inWorld, inPtr, inSize);
+	{
+		void* alloc_memory = RTRealloc(inWorld, inPtr, inSize);
+		if(!alloc_memory)
+			printf("ERROR: Julia could not allocate memory from real-time allocator. Run GC to free up memory.\n");
+		return alloc_memory; //It would be NULL anyway if failed to allocate
+	}
 	else
 		return realloc(inPtr, inSize);
 }
@@ -39,7 +55,18 @@ inline void* SC_RTRealloc(World* inWorld, void *inPtr, size_t inSize)
 inline void SC_RTFree(World* inWorld, void* inPtr)
 {
 	if(scsynthRunning)
-		RTFree(inWorld, inPtr);
+	{
+		if(inPtr) //If valid pointer, RTFree it
+		{
+			RTFree(inWorld, inPtr);
+			return;
+		}
+		else //Wasn't allocated correctly. Don't free it.
+		{
+			printf("ERROR: Julia could not free memory from real-time allocator\n");
+			return;
+		}
+	}
 	else
 		free(inPtr);
 }
@@ -58,7 +85,8 @@ inline int SC_posix_memalign(World* inWorld, void **res, size_t align, size_t le
 	unsigned char *mem, *newAlloc, *end;
 	size_t header, footer;
 	
-	//this if is from libc. check if it is a power of two of size void
+	//CHECK THIS BIT AGAIN.
+	//this if is from libc. check if alignment is a power of two of size void
 	if (align % sizeof (void *) != 0 || !pow(align / sizeof (void *), 2) || align == 0)
     	return EINVAL;
 

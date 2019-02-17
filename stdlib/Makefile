@@ -17,7 +17,7 @@ $(build_datarootdir)/julia/stdlib/$(VERSDIR):
 STDLIBS = Base64 CRC32c Dates DelimitedFiles Distributed FileWatching \
           Future InteractiveUtils Libdl LibGit2 LinearAlgebra Logging \
           Markdown Mmap Printf Profile Random REPL Serialization SHA \
-          SharedArrays Sockets SparseArrays Statistics SuiteSparse Test Unicode UUIDs
+          SharedArrays Sockets SparseArrays Statistics SuiteSparse Test Unicode UUIDs JuliaCollider
 STDLIBS-EXT = Pkg
 
 # Download and extract Pkg

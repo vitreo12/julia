@@ -522,6 +522,7 @@ let
             :Test,
             :REPL,
             :Statistics,
+            :JuliaCollider
         ]
 
     maxlen = maximum(textwidth.(string.(stdlibs)))

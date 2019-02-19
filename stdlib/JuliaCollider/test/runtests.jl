@@ -6,6 +6,8 @@ using JuliaCollider
 When doing tests outside of the Julia build, below should be "using Main.JuliaCollider..." =#
 using JuliaCollider.SCSynth
 using JuliaCollider.UGenObjectMacro
+using Main.JuliaCollider.SCSynth
+using Main.JuliaCollider.UGenObjectMacro
 
 @object Sine begin
     @inputs 1 ("frequency")

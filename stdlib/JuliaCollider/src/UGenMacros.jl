@@ -10,6 +10,10 @@ macro inputs(num_of_inputs, tuple_input_names)
                 error("@inputs: too many inputs. Max is 32")
                 return false
             end
+            if($num_of_inputs < 0)
+                error("@inputs: Negative values aren't supported. Minimum is 0")
+                return false
+            end
             if(isa($tuple_input_names, String)) #if tuple_input_names is a single string, make a Tuple out of it
                 if($num_of_inputs > 1)
                     error("@inputs: different number of inputs and parameter names")
@@ -29,6 +33,9 @@ macro inputs(num_of_inputs, tuple_input_names)
             return false
         end
     )
+
+    #global macro variable to be used to check input access in @in0, @in
+    global __macro_inputs_count__ = num_of_inputs;
     
     local inputs_expr = :(const __inputs__ = $num_of_inputs)
     local input_names_expr = :(const __input_names__ = $tuple_input_names)
@@ -46,8 +53,14 @@ macro inputs(num_of_inputs)
             if($num_of_inputs > 32)
                 error("@inputs: too many inputs. Max is 32")
             end
+            if($num_of_inputs < 0)
+                error("@inputs: Negative values aren't supported. Minimum is 0")
+            end
         end
     )
+
+    #global macro variable to be used to check input access in @in0, @in
+    global __macro_inputs_count__ = num_of_inputs;
 
     local inputs_expr = :(const __inputs__ = $num_of_inputs)
     local input_names_expr = :(const __input_names__ = "NO_NAMES") #single string "NO_NAMES".
@@ -59,6 +72,10 @@ macro outputs(num_of_outputs, tuple_output_names)
         quote
             if($num_of_outputs > 32)
                 error("@outputs: too many outputs. Max is 32")
+                return false
+            end
+            if($num_of_outputs < 1)
+                error("@outputs: Minimum is 1")
                 return false
             end
             if(isa($tuple_output_names, String)) #if tuple_output_names is a single string, make a Tuple out of it
@@ -80,6 +97,9 @@ macro outputs(num_of_outputs, tuple_output_names)
             return false
         end
     )
+
+    #global macro variable to be used to check output access in @out
+    global __macro_outputs_count__ = num_of_outputs;
     
     local outputs_expr = :(const __outputs__ = $num_of_outputs)
     local output_names_expr = :(const __output_names__ = $tuple_output_names)
@@ -97,8 +117,14 @@ macro outputs(num_of_outputs)
             if($num_of_outputs > 32)
                 error("@outputs: too many outputs. Max is 32")
             end
+            if($num_of_outputs < 1)
+                error("@outputs: Minimum is 1")
+            end
         end
     )
+
+    #global macro variable to be used to check output access in @out
+    global __macro_outputs_count__ = num_of_outputs;
 
     local outputs_expr = :(const __outputs__ = $num_of_outputs)
     local output_names_expr = :(const __output_names__ = "NO_NAMES") #single string "NO_NAMES".
@@ -194,15 +220,36 @@ macro sample_index()
 end
 
 macro in0(input_number)
+    if(input_number > __macro_inputs_count__)
+        error("@in0: Input number $input_number out of bounds. Maximum is $__macro_inputs_count__")
+    end
+    if(input_number < 1)
+        error("in0: Output number $input_number out of bounds. Counting starts from 1")
+    end
+    
     return esc(:(__ins__[$input_number]))
 end
 
 #These are only valid for Array{T, N}, not Array{T, 1}...
 macro in(input_number)
+    if(input_number > __macro_inputs_count__)
+        error("@in: Input number $input_number out of bounds. Maximum is $__macro_inputs_count__")
+    end
+    if(input_number < 1)
+        error("in: Output number $input_number out of bounds. Counting starts from 1")
+    end
+
     return esc(:(__ins__[$input_number, __sample_index__]))
 end
 
 macro out(output_number)
+    if(output_number > __macro_outputs_count__)
+        error("@out: Output number $output_number out of bounds. Maximum is $__macro_outputs_count__")
+    end
+    if(output_number < 1)
+        error("out: Output number $output_number out of bounds. Counting starts from 1")
+    end
+
     return esc(:(__outs__[$output_number, __sample_index__]))
 end
 

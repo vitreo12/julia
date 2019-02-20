@@ -31,8 +31,15 @@ inline void* SC_RTMalloc(World* inWorld, size_t inSize)
 	{
 		//Check if real-time allocator actually allocated anything...
 		void* alloc_memory = RTAlloc(inWorld, inSize);
-		if(!alloc_memory)
+		
+		//This check won't ever happen, as RTAlloc would have thrown an exception already. 
+		//I can't catch this exception here in C code. I need to have this file as C++ and wrap
+		//this calls in try {} catch {} with std::exception. I won't be ever returning the NULL ptr that
+		//I would need. ALSO: I need to change julia_internal.h to be calling these .cpp functions that would check
+		//the exceptions, not the standard RT SC ones.
+ 		if(!alloc_memory)
 			printf("ERROR: Julia could not allocate memory from real-time allocator. Run GC to free up memory.\n");
+		
 		return alloc_memory; //It would be NULL anyway if failed to allocate
 	}
 	else

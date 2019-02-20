@@ -171,18 +171,18 @@ typedef struct InterfaceTable InterfaceTable;
 #define RTAlloc (*SCInterfaceTable->fRTAlloc)
 #define RTRealloc (*SCInterfaceTable->fRTRealloc)
 #define RTFree (*SCInterfaceTable->fRTFree)
-extern inline void* RTCalloc(World* inWorld, size_t nitems, size_t inSize);
+extern void* RTCalloc(World* inWorld, size_t nitems, size_t inSize);
 
-extern inline void* SC_RTMalloc(World* inWorld, size_t inSize);
-extern inline void* SC_RTRealloc(World* inWorld, void *inPtr, size_t inSize);
-extern inline void SC_RTFree(World* inWorld, void* inPtr);
-extern inline void* SC_RTCalloc(World* inWorld, size_t nitems, size_t inSize);
+extern void* SC_RTMalloc(World* inWorld, size_t inSize);
+extern void* SC_RTRealloc(World* inWorld, void *inPtr, size_t inSize);
+extern void SC_RTFree(World* inWorld, void* inPtr);
+extern void* SC_RTCalloc(World* inWorld, size_t nitems, size_t inSize);
 
 //ADD CREDITS: https://github.com/chneukirchen/musl-chris2/blob/master/src/malloc/posix_memalign.c
-extern inline int SC_posix_memalign(World* inWorld, void **res, size_t align, size_t len);
+extern int SC_posix_memalign(World* inWorld, void **res, size_t align, size_t len);
 
 //Standard free() call
-extern inline void free_standard(void* inPtr);
+extern void free_standard(void* inPtr);
 
 /* GLOBAL VARIABLES */
 extern World* SCWorld;

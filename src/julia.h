@@ -705,6 +705,10 @@ extern void JL_GC_POP() JL_NOTSAFEPOINT;
 
 JL_DLLEXPORT int jl_gc_enable(int on);
 JL_DLLEXPORT int jl_gc_is_enabled(void);
+JL_DLLEXPORT int64_t jl_gc_allocd_SC(void);
+JL_DLLEXPORT int64_t jl_gc_total_allocd_SC(void);
+JL_DLLEXPORT int64_t jl_gc_deferred_alloc_SC(void);
+JL_DLLEXPORT int64_t jl_gc_interval_SC(void);
 JL_DLLEXPORT int64_t jl_gc_total_bytes(void);
 JL_DLLEXPORT uint64_t jl_gc_total_hrtime(void);
 JL_DLLEXPORT int64_t jl_gc_diff_total_bytes(void);

@@ -2604,6 +2604,26 @@ JL_DLLEXPORT int jl_gc_is_enabled(void)
     return !ptls->disable_gc;
 }
 
+JL_DLLEXPORT int64_t jl_gc_allocd_SC(void)
+{
+    return gc_num.allocd;
+}
+
+JL_DLLEXPORT int64_t jl_gc_total_allocd_SC(void)
+{
+    return gc_num.total_allocd;
+}
+
+JL_DLLEXPORT int64_t jl_gc_deferred_alloc_SC(void)
+{
+    return gc_num.deferred_alloc;
+}
+
+JL_DLLEXPORT int64_t jl_gc_interval_SC(void)
+{
+    return gc_num.interval;
+}
+
 JL_DLLEXPORT int64_t jl_gc_total_bytes(void)
 {
     // Sync this logic with `base/util.jl:GC_Diff`

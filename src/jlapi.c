@@ -69,14 +69,16 @@ JL_DLLEXPORT void jl_init_with_image_SC(const char *julia_bindir,
         return;
 
     printf("Init Julia with Supercollider's World and InterfaceTable pointers\n");   
+    
     if(!scsynthRunning)
         scsynthRunning = 1;
     if(!SCWorld)
         SCWorld = inWorld;
     if(!SCInterfaceTable)
         SCInterfaceTable = inFt;
-
+    
     printf("BOOT scsynthRunning: %i\n", scsynthRunning);
+    
     libsupport_init();
     jl_options.julia_bindir = julia_bindir;
     if (image_relative_path != NULL)
@@ -158,7 +160,7 @@ JL_DLLEXPORT void jl_SC_posix_memalign(size_t align, size_t size_alloc)
     if ((uintptr_t)(void*)memory_allocated_RTAlloc % align == 0) 
         printf("SC RT memory is %i bits aligned\n", (int)align); 
 
-    int result_SC = SC_posix_memalign(SCWorld, (void(**))&memory_allocated_SC, align, size_alloc * sizeof(float));
+    int result_SC = RTPosix_memalign(SCWorld, (void(**))&memory_allocated_SC, align, size_alloc * sizeof(float));
     if(!result_SC)
     {
         printf("*** SC posix memalign called *** \n");

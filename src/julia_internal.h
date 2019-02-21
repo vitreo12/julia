@@ -861,9 +861,40 @@ STATIC_INLINE void jl_free_aligned(void *p) JL_NOTSAFEPOINT
 }
 #else
 
-//Just standard malloc/free. Used for threadgroup.c allocations and deallocations.
-//It would work anyway if using SC's RT allocator, but it would be better not to overload too many
-//things in the allocator, to reduce the memory footprint of Julia inside of SC.
+//I am not relying on the macros in SC_AllocMacros.h because julia_internal.h is included all over
+//Julia. I don't want the malloc macros to expand more than the scope of the GC
+STATIC_INLINE void *jl_malloc_aligned(size_t sz, size_t align)
+{
+#if defined(_P64) || defined(__APPLE__)
+    if (align <= 16)
+        return SC_RTMalloc(SCWorld, sz);
+#endif
+    void *ptr;
+    if (SC_RTPosix_memalign(SCWorld, &ptr, align, sz))
+        return NULL;
+    return ptr;
+}
+
+STATIC_INLINE void *jl_realloc_aligned(void *d, size_t sz, size_t oldsz, size_t align)
+{
+#if defined(_P64) || defined(__APPLE__)
+    if (align <= 16)
+        return SC_RTRealloc(SCWorld, d, sz);
+#endif
+    void *b = jl_malloc_aligned(sz, align);
+    if (b != NULL) {
+        memcpy(b, d, oldsz > sz ? sz : oldsz);
+        SC_RTFree(SCWorld, d);
+    }
+    return b;
+}
+
+STATIC_INLINE void jl_free_aligned(void *p) JL_NOTSAFEPOINT
+{
+    SC_RTFree(SCWorld, p);
+} 
+
+/* USED FOR threadgroups.c. Don't want them to be allocating in SC: */
 STATIC_INLINE void *jl_malloc_aligned_standard(size_t sz, size_t align)
 {
 #if defined(_P64) || defined(__APPLE__)
@@ -876,85 +907,11 @@ STATIC_INLINE void *jl_malloc_aligned_standard(size_t sz, size_t align)
     return ptr;
 }
 
-//I am not relying on the macros in SC_AllocMacros.h because it is more performat to hard 
-//code the if statements on the whole allocation block, instead that on a function call basis.
-STATIC_INLINE void *jl_malloc_aligned_SC(size_t sz, size_t align)
-{
-    //printf("scsynth in julia, %i : SC MALLOC ALIGNED\n", scsynthRunning);
-#if defined(_P64) || defined(__APPLE__)
-    if (align <= 16)
-        return RTAlloc(SCWorld, sz);
-#endif
-    void *ptr;
-    if (SC_posix_memalign(SCWorld, &ptr, align, sz))
-        return NULL;
-    return ptr;
-}
-
-STATIC_INLINE void *jl_malloc_aligned(size_t sz, size_t align)
-{
-    if(scsynthRunning)
-        return jl_malloc_aligned_SC(sz, align);
-    else
-        return jl_malloc_aligned_standard(sz, align);
-}
-
-STATIC_INLINE void *jl_realloc_aligned_standard(void *d, size_t sz, size_t oldsz, size_t align)
-{
-#if defined(_P64) || defined(__APPLE__)
-    if (align <= 16)
-        return realloc(d, sz);
-#endif
-    void *b = jl_malloc_aligned_standard(sz, align);
-    if (b != NULL) {
-        memcpy(b, d, oldsz > sz ? sz : oldsz);
-        free(d);
-    }
-    return b;
-}
-
-STATIC_INLINE void *jl_realloc_aligned_SC(void *d, size_t sz, size_t oldsz, size_t align)
-{
-#if defined(_P64) || defined(__APPLE__)
-    if (align <= 16)
-        return RTRealloc(SCWorld, d, sz);
-#endif
-    void *b = jl_malloc_aligned_SC(sz, align);
-    if (b != NULL) {
-        memcpy(b, d, oldsz > sz ? sz : oldsz);
-        RTFree(SCWorld, d);
-    }
-    return b;
-}
-
-STATIC_INLINE void *jl_realloc_aligned(void *d, size_t sz, size_t oldsz, size_t align)
-{
-    if(scsynthRunning)
-        return jl_realloc_aligned_SC(d, sz, oldsz, align);
-    else
-        return jl_realloc_aligned_standard(d, sz, oldsz, align);
-}
-
-//Just standard malloc/free. Used for threadgroup.c allocations and deallocations.
-//It would work anyway if using SC's RT allocator, but it would be better not to overload too many
-//things in the allocator, to reduce the memory footprint of Julia inside of SC.
 STATIC_INLINE void jl_free_aligned_standard(void *p) JL_NOTSAFEPOINT
 {
     free(p);
 }
 
-STATIC_INLINE void jl_free_aligned_SC(void *p) JL_NOTSAFEPOINT
-{
-    RTFree(SCWorld, p);
-}
-
-STATIC_INLINE void jl_free_aligned(void *p) JL_NOTSAFEPOINT
-{
-    if(scsynthRunning)
-        jl_free_aligned_SC(p);
-    else
-        jl_free_aligned_standard(p);
-}
 #endif
 
 // -- typemap.c -- //

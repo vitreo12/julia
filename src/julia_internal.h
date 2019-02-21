@@ -861,8 +861,8 @@ STATIC_INLINE void jl_free_aligned(void *p) JL_NOTSAFEPOINT
 }
 #else
 
-//I am not relying on the macros in SC_AllocMacros.h because julia_internal.h is included all over
-//Julia. I don't want the malloc macros to expand more than the scope of the GC
+//Not relying on the macros in SC_AllocMacros.h because julia_internal.h is included all over
+//Julia. Don't want the malloc macros to expand more than the scope of the GC
 STATIC_INLINE void *jl_malloc_aligned(size_t sz, size_t align)
 {
 #if defined(_P64) || defined(__APPLE__)

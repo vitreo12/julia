@@ -10,24 +10,6 @@ extern "C"
 	InterfaceTable* SCInterfaceTable = NULL;
 
 	/* RTALLOC WRAPPER FUNCTIONS */
-	void* RTCalloc(World* inWorld, size_t nitems, size_t inSize)
-	{
-		void* alloc_memory = NULL;
-		try
-		{
-			size_t length = inSize * nitems;
-			alloc_memory = RTAlloc(inWorld, length);
-			memset(alloc_memory, 0, length);
-		}
-		catch (...) //If RTAlloc gives exception, go here. Reassign null and return it
-		{
-			printf("WARNING: Julia could not allocate memory. Run the GC. \n");
-			alloc_memory = NULL;
-		}
-
-		return alloc_memory; 
-	}
-
 	void* SC_RTMalloc(World* inWorld, size_t inSize)
 	{
 		if(scsynthRunning)
@@ -76,6 +58,24 @@ extern "C"
 			RTFree(inWorld, inPtr); //RTFree (as does standard free) already checks for validity of pointer
 		else
 			free(inPtr);
+	}
+
+	void* RTCalloc(World* inWorld, size_t nitems, size_t inSize)
+	{
+		void* alloc_memory = NULL;
+		try
+		{
+			size_t length = inSize * nitems;
+			alloc_memory = RTAlloc(inWorld, length);
+			memset(alloc_memory, 0, length);
+		}
+		catch (...) //If RTAlloc gives exception, go here. Reassign null and return it
+		{
+			printf("WARNING: Julia could not allocate memory. Run the GC. \n");
+			alloc_memory = NULL;
+		}
+
+		return alloc_memory; 
 	}
 
 	void* SC_RTCalloc(World* inWorld, size_t nitems, size_t inSize)
@@ -166,6 +166,7 @@ extern "C"
 			return posix_memalign(res, align, len);
 	}
 
+	/* STANDARD free() FUNCTION. NEEDED FOR jl_gc_free_array() in gc.c */
 	void free_standard(void* inPtr)
 	{
 		free(inPtr);

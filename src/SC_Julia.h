@@ -14,6 +14,10 @@
 
 #define SIZE_ALIGN (4*sizeof(size_t))
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef  int64_t  int64;
 typedef uint64_t uint64;
 
@@ -175,18 +179,23 @@ extern void* RTCalloc(World* inWorld, size_t nitems, size_t inSize);
 
 extern void* SC_RTMalloc(World* inWorld, size_t inSize);
 extern void* SC_RTRealloc(World* inWorld, void *inPtr, size_t inSize);
-extern void SC_RTFree(World* inWorld, void* inPtr);
+extern void  SC_RTFree(World* inWorld, void* inPtr);
 extern void* SC_RTCalloc(World* inWorld, size_t nitems, size_t inSize);
 
 //ADD CREDITS: https://github.com/chneukirchen/musl-chris2/blob/master/src/malloc/posix_memalign.c
-extern int SC_posix_memalign(World* inWorld, void **res, size_t align, size_t len);
+extern int RTPosix_memalign(World* inWorld, void **res, size_t align, size_t len);
+extern int SC_RTPosix_memalign(World* inWorld, void **res, size_t align, size_t len);
 
-//Standard free() call
+//Standard free() call. Explanation in jl_gc_free_array in gc.c
 extern void free_standard(void* inPtr);
 
 /* GLOBAL VARIABLES */
 extern World* SCWorld;
 extern InterfaceTable* SCInterfaceTable;
 extern int scsynthRunning;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

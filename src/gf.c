@@ -39,11 +39,9 @@ JL_DLLEXPORT jl_value_t *jl_invoke(jl_method_instance_t *meth, jl_value_t **args
 {
     jl_callptr_t fptr = meth->invoke;
     if (fptr != jl_fptr_trampoline) {
-        printf("FOUND THE FUNCTION!\n");
         return fptr(meth, args, nargs);
     }
     else {
-        printf("NOT FOUND THE FUNCTION! Compiling... \n");
         // if this hasn't been inferred (compiled) yet,
         // inferring it might not be able to handle the world range
         // so we just do a generic apply here
@@ -81,7 +79,6 @@ JL_DLLEXPORT jl_value_t *jl_invoke_SC(jl_method_instance_t *meth, jl_value_t **a
     result = jl_invoke(meth, args, nargs);
 
     jl_get_ptls_states()->world_age = last_age;
-    jl_exception_clear();
 
     return result;
 }
@@ -91,11 +88,13 @@ JL_DLLEXPORT jl_value_t *jl_invoke_exception_SC(jl_method_instance_t *meth, jl_v
     jl_value_t* result;
     JL_TRY {
         jl_invoke_SC(meth, args, nargs);
+        jl_exception_clear();
     }
     JL_CATCH {
         jl_get_ptls_states()->previous_exception = jl_current_exception();
 
         //Could print the exception out here.
+        printf("Exception in invoke. \n");
 
         result = NULL;
     }
@@ -2267,6 +2266,7 @@ JL_DLLEXPORT jl_method_instance_t *jl_lookup_generic_SC(jl_value_t **args, uint3
         jl_get_ptls_states()->previous_exception = jl_current_exception();
 
         //Could print the exception out here.
+        printf("Exception in lookup. \n");
 
         mfunc = NULL;
     }

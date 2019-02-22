@@ -39,9 +39,11 @@ JL_DLLEXPORT jl_value_t *jl_invoke(jl_method_instance_t *meth, jl_value_t **args
 {
     jl_callptr_t fptr = meth->invoke;
     if (fptr != jl_fptr_trampoline) {
+        printf("FOUND THE FUNCTION!\n");
         return fptr(meth, args, nargs);
     }
     else {
+        printf("NOT FOUND THE FUNCTION! Compiling... \n");
         // if this hasn't been inferred (compiled) yet,
         // inferring it might not be able to handle the world range
         // so we just do a generic apply here
@@ -55,6 +57,50 @@ JL_DLLEXPORT jl_value_t *jl_invoke(jl_method_instance_t *meth, jl_value_t **args
 
         return jl_apply(args, nargs);
     }
+}
+
+/*
+For any function, there is the need to increase the ptls world counter and world age.
+This could cause problem in supernova, as multiple threads would access the world_age variable (which is size_t).
+I could try and make it atomic, and test if it works.
+*/
+JL_DLLEXPORT jl_value_t *jl_invoke_SC(jl_method_instance_t *meth, jl_value_t **args, uint32_t nargs)
+{
+    //meth (coming from a jl_lookup_generic_SC) would be NULL if it failed.
+    if(!meth)
+    {
+        printf("Invalid method instance \n");
+        return NULL;
+    }
+
+    //No exception handling here.
+    jl_value_t* result;
+    size_t last_age = jl_get_ptls_states()->world_age;
+    jl_get_ptls_states()->world_age = jl_get_world_counter();
+
+    result = jl_invoke(meth, args, nargs);
+
+    jl_get_ptls_states()->world_age = last_age;
+    jl_exception_clear();
+
+    return result;
+}
+
+JL_DLLEXPORT jl_value_t *jl_invoke_exception_SC(jl_method_instance_t *meth, jl_value_t **args, uint32_t nargs)
+{
+    jl_value_t* result;
+    JL_TRY {
+        jl_invoke_SC(meth, args, nargs);
+    }
+    JL_CATCH {
+        jl_get_ptls_states()->previous_exception = jl_current_exception();
+
+        //Could print the exception out here.
+
+        result = NULL;
+    }
+
+    return result;
 }
 
 /// ----- Handling for Julia callbacks ----- ///
@@ -2201,6 +2247,31 @@ STATIC_INLINE jl_method_instance_t *jl_lookup_generic_(jl_value_t **args, uint32
     if (traceen)
         jl_printf(JL_STDOUT, " at %s:%d\n", jl_symbol_name(mfunc->def.method->file), mfunc->def.method->line);
 #endif
+    return mfunc;
+}
+
+JL_DLLEXPORT jl_method_instance_t *jl_lookup_generic_SC(jl_value_t **args, uint32_t nargs)
+{
+    jl_method_instance_t *mfunc;
+
+    JL_TRY {
+        size_t last_age = jl_get_ptls_states()->world_age;
+        jl_get_ptls_states()->world_age = jl_get_world_counter();
+
+        mfunc = jl_lookup_generic_(args, nargs, jl_int32hash_fast(jl_return_address()), jl_get_ptls_states()->world_age);
+
+        jl_get_ptls_states()->world_age = last_age;
+        jl_exception_clear();
+    }
+    JL_CATCH {
+        jl_get_ptls_states()->previous_exception = jl_current_exception();
+
+        //Could print the exception out here.
+
+        mfunc = NULL;
+    }
+
+    //I can now check with validity of pointer to see if the lookup went through correctly
     return mfunc;
 }
 

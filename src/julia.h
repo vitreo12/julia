@@ -1581,6 +1581,10 @@ STATIC_INLINE int jl_vinfo_usedundef(uint8_t vi)
 
 // calling into julia ---------------------------------------------------------
 
+JL_DLLEXPORT jl_method_instance_t *jl_lookup_generic_SC(jl_value_t **args, uint32_t nargs);
+JL_DLLEXPORT jl_value_t *jl_invoke_SC(jl_method_instance_t *meth, jl_value_t **args, uint32_t nargs);
+JL_DLLEXPORT jl_value_t *jl_invoke_exception_SC(jl_method_instance_t *meth, jl_value_t **args, uint32_t nargs);
+
 JL_DLLEXPORT jl_value_t *jl_apply_generic(jl_value_t **args, uint32_t nargs);
 JL_DLLEXPORT jl_value_t *jl_invoke(jl_method_instance_t *meth, jl_value_t **args, uint32_t nargs);
 JL_DLLEXPORT int32_t jl_invoke_api(jl_method_instance_t *mi);

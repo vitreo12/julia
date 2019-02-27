@@ -22,6 +22,11 @@ extern "C"
 			catch (...) //If RTAlloc gives exception, go here. Reassign null and return it
 			{
 				printf("WARNING: Julia could not allocate memory. Run the GC. \n");
+
+				/* PERHAPS HERE I NEED TO RETURN A ptr to jl_nothing, as it is the void* counterpart of Julia
+				Julia would know how to treat the value, if it is used in functions. Consider:
+				a = zeros(10000) -> memory error
+				println(a) -> wouldn't know how to print a NULL, but it would for a jl_nothing */
 				alloc_memory = NULL;
 			}
 
@@ -43,6 +48,11 @@ extern "C"
 			catch (...) //If RTAlloc gives exception, go here. Reassign null and return it
 			{
 				printf("WARNING: Julia could not allocate memory. Run the GC. \n");
+
+				/* PERHAPS HERE I NEED TO RETURN A ptr to jl_nothing, as it is the void* counterpart of Julia
+				Julia would know how to treat the value, if it is used in functions. Consider:
+				a = zeros(10000) -> memory error
+				println(a) -> wouldn't know how to print a NULL, but it would for a jl_nothing */
 				alloc_memory = NULL;
 			}
 
@@ -72,6 +82,11 @@ extern "C"
 		catch (...) //If RTAlloc gives exception, go here. Reassign null and return it
 		{
 			printf("WARNING: Julia could not allocate memory. Run the GC. \n");
+
+			/* PERHAPS HERE I NEED TO RETURN A ptr to jl_nothing, as it is the void* counterpart of Julia
+				Julia would know how to treat the value, if it is used in functions. Consider:
+				a = zeros(10000) -> memory error
+				println(a) -> wouldn't know how to print a NULL, but it would for a jl_nothing */
 			alloc_memory = NULL;
 		}
 
@@ -112,6 +127,11 @@ extern "C"
 			catch (...)
 			{
 				printf("WARNING: Julia could not allocate memory. Run the GC. \n");
+
+				/* PERHAPS HERE I NEED TO RETURN A ptr to jl_nothing, as it is the void* counterpart of Julia
+				Julia would know how to treat the value, if it is used in functions. Consider:
+				a = zeros(10000) -> memory error
+				println(a) -> wouldn't know how to print a NULL, but it would for a jl_nothing */
 				mem = NULL;
 			}
 			if (!mem)
@@ -128,6 +148,11 @@ extern "C"
 		catch (...)
 		{
 			printf("WARNING: Julia could not allocate memory. Run the GC. \n");
+
+			/* PERHAPS HERE I NEED TO RETURN A ptr to jl_nothing, as it is the void* counterpart of Julia
+				Julia would know how to treat the value, if it is used in functions. Consider:
+				a = zeros(10000) -> memory error
+				println(a) -> wouldn't know how to print a NULL, but it would for a jl_nothing */
 			mem = NULL;
 		}
 		if (!mem)

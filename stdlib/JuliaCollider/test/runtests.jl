@@ -58,8 +58,13 @@ using Main.JuliaCollider.UGenObjectMacro
     @destructor begin end
 end
 
-ins = 440 * ones(Float32, 1, 512) #frequency = 440hz
-outs = zeros(Float32, 1, 512)
+ins = Vector{Vector{Float32}}(undef, 1)
+ins[1] = 440 * ones(Float32, 512) #frequency = 440hz
+
+outs = Vector{Vector{Float32}}(undef, 1)
+outs[1] = zeros(Float32, 512)
+
+
 obj = Sine.__constructor__()
 scsynth = __SCSynth__(44100.0, Int32(512))
 

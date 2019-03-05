@@ -192,8 +192,9 @@ macro perform(arguments)
     local body = arguments.args
     
     local perform_definition = :(
-        function __perform__(__unit__::__UGen__, __ins__::Array{Float32, N}, __outs__::Array{Float32, I}, __server__::__SCSynth__) where {N, I}
+        function __perform__(__unit__::__UGen__, __ins__::Vector{Vector{Float32}}, __outs__::Vector{Vector{Float32}}, __server__::__SCSynth__)
             $(body...)
+            return nothing
         end
     )
 
@@ -201,7 +202,7 @@ macro perform(arguments)
 end
 
 #Should @inbounds be here or at every array access? I can't be sure that the user will be accessing his own buffers
-#with correct indexing...
+#with correct indexing... ALSO: TEST IF @inbounds actually improves speed with a Vector{Vector{Float32}}
 macro sample(arguments)
     local body = arguments.args
 
@@ -227,10 +228,9 @@ macro in0(input_number)
         error("in0: Output number $input_number out of bounds. Counting starts from 1")
     end
     
-    return esc(:(__ins__[$input_number]))
+    return esc(:(__ins__[$input_number][1]))
 end
 
-#These are only valid for Array{T, N}, not Array{T, 1}...
 macro in(input_number)
     if(input_number > __macro_inputs_count__)
         error("@in: Input number $input_number out of bounds. Maximum is $__macro_inputs_count__")
@@ -239,7 +239,7 @@ macro in(input_number)
         error("in: Output number $input_number out of bounds. Counting starts from 1")
     end
 
-    return esc(:(__ins__[$input_number, __sample_index__]))
+    return esc(:(__ins__[$input_number][__sample_index__]))
 end
 
 macro out(output_number)
@@ -250,7 +250,7 @@ macro out(output_number)
         error("out: Output number $output_number out of bounds. Counting starts from 1")
     end
 
-    return esc(:(__outs__[$output_number, __sample_index__]))
+    return esc(:(__outs__[$output_number][__sample_index__]))
 end
 
 #=

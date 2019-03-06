@@ -2106,6 +2106,16 @@ JL_DLLEXPORT int jl_compile_hint(jl_tupletype_t *types)
     return 1;
 }
 
+JL_DLLEXPORT int jl_compile_hint_SC(jl_tupletype_t *types)
+{
+    return jl_compile_hint(types);
+}
+
+JL_DLLEXPORT jl_method_instance_t *jl_get_specialization1_SC(jl_tupletype_t *types JL_PROPAGATES_ROOT, size_t world, int mt_cache)
+{
+    return jl_get_specialization1(types, world, mt_cache);
+}
+
 JL_DLLEXPORT jl_value_t *jl_get_spec_lambda(jl_tupletype_t *types, size_t world)
 {
     jl_method_instance_t *li = jl_get_specialization1(types, world, 0);
@@ -2339,16 +2349,10 @@ JL_DLLEXPORT jl_method_instance_t *jl_lookup_generic_and_compile_SC(jl_value_t *
 
     JL_TRY {
         /* Should I, perhaps, only let the include() function to update world_age? */
-        
-        //size_t last_age = jl_get_ptls_states()->world_age;
-        //jl_get_ptls_states()->world_age = jl_get_world_counter();
 
-        //printf("last_age : %zu\n", last_age);
-        //printf("world_age: %zu\n", jl_get_ptls_states()->world_age);
+        jl_get_ptls_states()->world_age = jl_get_world_counter();
 
         mfunc = jl_lookup_generic_(args, nargs, jl_int32hash_fast(jl_return_address()), jl_get_ptls_states()->world_age);
-
-        //jl_get_ptls_states()->world_age = last_age;
 
         jl_exception_clear();
     }
@@ -2372,6 +2376,7 @@ JL_DLLEXPORT jl_method_instance_t *jl_lookup_generic_and_compile_SC(jl_value_t *
     if(mfunc)
     {
         JL_TRY {
+            //jl_get_ptls_states()->world_age has been already updated previously. Here it's the same world_age.
             mfunc->invoke(mfunc, args, nargs);
             jl_exception_clear();
         }

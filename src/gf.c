@@ -105,7 +105,7 @@ JL_DLLEXPORT jl_value_t *jl_invoke_exception_SC(jl_method_instance_t *meth, jl_v
 JL_DLLEXPORT jl_value_t *jl_invoke_already_compiled_SC(jl_method_instance_t *meth, jl_value_t **args, uint32_t nargs)
 {
     //meth (coming from a jl_lookup_generic_SC) would be NULL if it failed.
-    if(!meth)
+    if(!meth || !meth->invoke)
     {
         printf("Invalid method instance \n");
         return NULL;
@@ -2349,8 +2349,10 @@ JL_DLLEXPORT jl_method_instance_t *jl_lookup_generic_and_compile_SC(jl_value_t *
 
     JL_TRY {
         /* Should I, perhaps, only let the include() function to update world_age? */
-
         jl_get_ptls_states()->world_age = jl_get_world_counter();
+
+        if(!args[0])
+            jl_error("Could not retrieve method instance");
 
         mfunc = jl_lookup_generic_(args, nargs, jl_int32hash_fast(jl_return_address()), jl_get_ptls_states()->world_age);
 
@@ -2377,7 +2379,12 @@ JL_DLLEXPORT jl_method_instance_t *jl_lookup_generic_and_compile_SC(jl_value_t *
     {
         JL_TRY {
             //jl_get_ptls_states()->world_age has been already updated previously. Here it's the same world_age.
+            
+            if(!mfunc->invoke)
+                jl_error("Invalid invoke method");
+
             mfunc->invoke(mfunc, args, nargs);
+            
             jl_exception_clear();
         }
         JL_CATCH {
@@ -2392,6 +2399,8 @@ JL_DLLEXPORT jl_method_instance_t *jl_lookup_generic_and_compile_SC(jl_value_t *
                 const char* returned_exception = jl_string_ptr(jl_call2(sprint_fun, showerror_fun, exception));
                 printf("ERROR: %s\n", returned_exception);
             }
+
+            mfunc = NULL;
         }
     }
 

@@ -106,29 +106,50 @@ macro object(name, body)
     #inputs and outputs will already be declared at this point...
     local create_ugen_graph = :(__ugen_graph__ = __UGenGraph__(nameof($name), __inputs__, __input_names__, __outputs__, __output_names__))
 
+    #unique_id used when retrieving a JuliaDef by name
+    local unique_id_def_and_setter = quote
+        global __unique_id__ = -1
+        
+        function __set_unique_id__(val::Int64)
+            global __unique_id__ = val
+        end
+    end
+
     #Actual module definition
     local module_name = name
     local module_definition = :(
         module $module_name
-            #=JuliaCollider module is in the Main namespace as it is precompiled inside the sysimg.
+            #= The "JuliaCollider" module is in the Main namespace as it is precompiled inside the sysimg.
             When testing outside of the Julia build, below macros should be "using Main.JuliaCollider..." =#
+            
             #@inputs, @outputs, etc...
             using JuliaCollider.UGenMacros
+            #using Main.JuliaCollider.UGenMacros
+            
             #__SCSynth__
             import JuliaCollider.SCSynth.__SCSynth__
+            #import Main.JuliaCollider.SCSynth.__SCSynth__
+            
             #inner macros definitions
             $macro_to_get_names_and_types
             $macro_to_get_constructor_body
+            
             #inner function definitions for creating __UGen__ struct and its constructor
             $function_to_define_struct
             $function_to_create_outer_constructor
             $function_to_parse_constructor_body
+            
             #__UGenGraph__ definition
             $ugen_graph_definition
+            
             #Actual body of @object
             $quoted_julia_code
+            
             #Create __UGenGraph__
             $create_ugen_graph
+            
+            #Unique_id
+            $unique_id_def_and_setter
         end
     )
     

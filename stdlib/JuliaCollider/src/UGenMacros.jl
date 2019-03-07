@@ -37,7 +37,7 @@ macro inputs(num_of_inputs, tuple_input_names)
     #global macro variable to be used to check input access in @in0, @in
     global __macro_inputs_count__ = num_of_inputs;
     
-    local inputs_expr = :(const __inputs__ = $num_of_inputs)
+    local inputs_expr = :(const __inputs__ = Int32($num_of_inputs))
     local input_names_expr = :(const __input_names__ = $tuple_input_names)
     if(single_string)
         input_names_expr = :(const __input_names__ = ($tuple_input_names, ))
@@ -62,7 +62,7 @@ macro inputs(num_of_inputs)
     #global macro variable to be used to check input access in @in0, @in
     global __macro_inputs_count__ = num_of_inputs;
 
-    local inputs_expr = :(const __inputs__ = $num_of_inputs)
+    local inputs_expr = :(const __inputs__ = Int32($num_of_inputs))
     local input_names_expr = :(const __input_names__ = "NO_NAMES") #single string "NO_NAMES".
     return esc(:(Expr(:block, $inputs_expr, $input_names_expr)))
 end
@@ -101,7 +101,7 @@ macro outputs(num_of_outputs, tuple_output_names)
     #global macro variable to be used to check output access in @out
     global __macro_outputs_count__ = num_of_outputs;
     
-    local outputs_expr = :(const __outputs__ = $num_of_outputs)
+    local outputs_expr = :(const __outputs__ = Int32($num_of_outputs))
     local output_names_expr = :(const __output_names__ = $tuple_output_names)
     if(single_string)
         output_names_expr = :(const __output_names__ = ($tuple_output_names, ))
@@ -126,7 +126,7 @@ macro outputs(num_of_outputs)
     #global macro variable to be used to check output access in @out
     global __macro_outputs_count__ = num_of_outputs;
 
-    local outputs_expr = :(const __outputs__ = $num_of_outputs)
+    local outputs_expr = :(const __outputs__ = Int32($num_of_outputs))
     local output_names_expr = :(const __output_names__ = "NO_NAMES") #single string "NO_NAMES".
     return esc(:(Expr(:block, $outputs_expr, $output_names_expr)))
 end
@@ -192,7 +192,7 @@ macro perform(arguments)
     local body = arguments.args
     
     local perform_definition = :(
-        function __perform__(__unit__::__UGen__, __ins__::Vector{Vector{Float32}}, __outs__::Vector{Vector{Float32}}, __server__::__SCSynth__)
+        function __perform__(__unit__::__UGen__, __ins__::Vector{Vector{Float32}}, __outs__::Vector{Vector{Float32}}, __buffer_size__::Int32, __server__::__SCSynth__)
             $(body...)
             return nothing
         end
@@ -202,12 +202,11 @@ macro perform(arguments)
 end
 
 #Should @inbounds be here or at every array access? I can't be sure that the user will be accessing his own buffers
-#with correct indexing... ALSO: TEST IF @inbounds actually improves speed with a Vector{Vector{Float32}}
 macro sample(arguments)
     local body = arguments.args
 
     local sample_loop = quote
-        __unit_range_loop__::UnitRange{Int64} = 1 : __server__.bufferSize
+        __unit_range_loop__::UnitRange{Int32} = Int32(1) : __buffer_size__
         @inbounds for __sample_index__ = __unit_range_loop__
             $(body...)
         end

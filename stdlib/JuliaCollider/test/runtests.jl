@@ -2,8 +2,8 @@ using Test
 using JuliaCollider
 
 #=
-#=To be called at Julia initialization to access __SCSynth__ and @object.
-When doing tests outside of the Julia build, below should be "using Main.JuliaCollider..." =#
+# To be called at Julia initialization to access __SCSynth__ and @object.
+# When doing tests outside of the Julia build, below should be "using Main.JuliaCollider..."
 using JuliaCollider.SCSynth
 using JuliaCollider.UGenObjectMacro
 using Main.JuliaCollider.SCSynth
@@ -58,18 +58,19 @@ using Main.JuliaCollider.UGenObjectMacro
     @destructor begin end
 end
 
+buffer_size = Int32(512)
+
 ins = Vector{Vector{Float32}}(undef, 1)
-ins[1] = 440 * ones(Float32, 512) #frequency = 440hz
+ins[1] = 440 * ones(Float32, buffer_size) #frequency = 440hz
 
 outs = Vector{Vector{Float32}}(undef, 1)
-outs[1] = zeros(Float32, 512)
-
+outs[1] = zeros(Float32, buffer_size)
 
 obj = Sine.__constructor__()
-scsynth = __SCSynth__(44100.0, Int32(512))
+scsynth = __SCSynth__(44100.0, buffer_size)
 
 using BenchmarkTools
 
 #They should have same speed... even with the test on @unit.
-@benchmark Sine.__perform__(obj, ins, outs, scsynth)
+@benchmark Sine.__perform__(obj, ins, outs, buffer_size, scsynth)
 =#

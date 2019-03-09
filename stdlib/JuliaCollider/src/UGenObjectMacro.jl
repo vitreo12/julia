@@ -110,10 +110,27 @@ macro object(name, body)
     local unique_id_def_and_setter = quote
         global __unique_id__ = -1
         
-        function __set_unique_id__(val::Int64)
+        function __set_unique_id__(val::UInt64)
             global __unique_id__ = val
         end
     end
+
+    #Used in global_object_id_dict for each object to be added to global_object_id_dict table
+    local ugen_ref_definition = :(
+        struct __UGenRef__
+            object::Base.RefValue{__UGen__}
+            ins::Base.RefValue{Vector{Vector{Float32}}}
+            outs::Base.RefValue{Vector{Vector{Float32}}}
+
+            function __UGenRef__(o::__UGen__, i_v::Vector{Vector{Float32}}, o_v::Vector{Vector{Float32}})
+                o_r::Base.RefValue{__UGen__} = Base.RefValue{__UGen__}(o)
+                i_v_r::Base.RefValue{Vector{Vector{Float32}}} = Base.RefValue{Vector{Vector{Float32}}}(i_v)
+                o_v_r::Base.RefValue{Vector{Vector{Float32}}} = Base.RefValue{Vector{Vector{Float32}}}(o_v)
+
+                return new(o_r, i_v_r, o_v_r)
+            end
+        end
+    )
 
     #Actual module definition
     local module_name = name
@@ -150,6 +167,9 @@ macro object(name, body)
             
             #Unique_id
             $unique_id_def_and_setter
+
+            #__UGenRef__ definition
+            $ugen_ref_definition
         end
     )
     

@@ -131,6 +131,18 @@ macro object(name, body)
             end
         end
     )
+    
+    local set_index_ugen_ref = :(
+        function set_index_ugen_ref(id_dict::IdDict{Any, Any}, ugen_ref::__UGenRef__)
+            setindex!(id_dict, ugen_ref, ugen_ref)
+        end
+    )
+
+    local delete_index_ugen_ref = :(
+        function delete_index_ugen_ref(id_dict::IdDict{Any, Any}, ugen_ref::__UGenRef__)
+            delete!(id_dict, ugen_ref)
+        end
+    )
 
     #Actual module definition
     local module_name = name
@@ -170,6 +182,10 @@ macro object(name, body)
 
             #__UGenRef__ definition
             $ugen_ref_definition
+
+            #setindex! and delete! for __UGenRef__
+            $set_index_ugen_ref
+            $delete_index_ugen_ref
         end
     )
     

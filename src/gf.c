@@ -73,12 +73,8 @@ JL_DLLEXPORT jl_value_t *jl_invoke_SC(jl_method_instance_t *meth, jl_value_t **a
 
     //No exception handling here.
     jl_value_t* result;
-    size_t last_age = jl_get_ptls_states()->world_age;
-    jl_get_ptls_states()->world_age = jl_get_world_counter();
 
     result = jl_invoke(meth, args, nargs);
-
-    jl_get_ptls_states()->world_age = last_age;
 
     return result;
 }
@@ -86,18 +82,35 @@ JL_DLLEXPORT jl_value_t *jl_invoke_SC(jl_method_instance_t *meth, jl_value_t **a
 JL_DLLEXPORT jl_value_t *jl_invoke_exception_SC(jl_method_instance_t *meth, jl_value_t **args, uint32_t nargs)
 {
     jl_value_t* result;
-    JL_TRY {
-        jl_invoke_SC(meth, args, nargs);
-        jl_exception_clear();
-    }
-    JL_CATCH {
-        jl_get_ptls_states()->previous_exception = jl_current_exception();
 
-        //Could print the exception out here.
-        printf("Exception in invoke. \n");
+        JL_TRY {
+            //jl_get_ptls_states()->world_age has been already updated previously. Here it's the same world_age.
+            
+            if(!meth->invoke)
+                jl_error("Invalid invoke method");
 
-        result = NULL;
-    }
+            result = meth->invoke(meth, args, nargs);
+
+            if(!result)
+                jl_error("Invalid invoke call");
+            
+            jl_exception_clear();
+        }
+        JL_CATCH {
+            jl_get_ptls_states()->previous_exception = jl_current_exception();
+
+            jl_value_t* exception = jl_exception_occurred();
+            jl_value_t* sprint_fun = jl_get_function(jl_base_module, "sprint");
+            jl_value_t* showerror_fun = jl_get_function(jl_base_module, "showerror");
+
+            if(exception)
+            {
+                const char* returned_exception = jl_string_ptr(jl_call2(sprint_fun, showerror_fun, exception));
+                printf("ERROR: %s\n", returned_exception);
+            }
+
+            result = NULL;
+        }
 
     return result;
 }
@@ -2356,6 +2369,9 @@ JL_DLLEXPORT jl_method_instance_t *jl_lookup_generic_and_compile_SC(jl_value_t *
 
         mfunc = jl_lookup_generic_(args, nargs, jl_int32hash_fast(jl_return_address()), jl_get_ptls_states()->world_age);
 
+        if(!mfunc)
+            jl_error("Invalid method instance compilation");
+
         jl_exception_clear();
     }
     JL_CATCH {
@@ -2377,13 +2393,18 @@ JL_DLLEXPORT jl_method_instance_t *jl_lookup_generic_and_compile_SC(jl_value_t *
     //If function retrieved correctly, go ahead with running it. Effectively, compiling it.
     if(mfunc)
     {
+        jl_value_t* dummy_result;
+
         JL_TRY {
             //jl_get_ptls_states()->world_age has been already updated previously. Here it's the same world_age.
             
             if(!mfunc->invoke)
                 jl_error("Invalid invoke method");
 
-            mfunc->invoke(mfunc, args, nargs);
+            dummy_result = mfunc->invoke(mfunc, args, nargs);
+
+            if(!dummy_result)
+                jl_error("Invalid invoke call");
             
             jl_exception_clear();
         }

@@ -110,7 +110,7 @@ macro object(name, body)
     local unique_id_def_and_setter = quote
         global __unique_id__ = -1
         
-        function __set_unique_id__(val::UInt64)
+        function __set_unique_id__(val::Int32)
             global __unique_id__ = val
         end
     end

@@ -59,7 +59,9 @@ JL_DLLEXPORT void jl_init_with_image(const char *julia_bindir,
     jl_exception_clear();
 }
 
-//SC INIT:
+/*********************************************************************/
+/*                     SUPERCOLLIDER FUNCTIONS                       */
+/*********************************************************************/
 JL_DLLEXPORT void jl_init_with_image_SC(const char *julia_bindir,
                                      const char *image_relative_path,
                                      World* inWorld,
@@ -67,17 +69,21 @@ JL_DLLEXPORT void jl_init_with_image_SC(const char *julia_bindir,
 {
     if (jl_is_initialized())
         return;
-
-    printf("Init Julia with Supercollider's World and InterfaceTable pointers\n");   
     
-    if(!scsynthRunning)
-        scsynthRunning = 1;
+    if(!inWorld || !inFt)
+    {
+        printf("ERROR: Invalid World* and InterfaceTable*: Julia won't boot \n");   
+        return;
+    }
+
+    printf("*** Init Julia with Supercollider's World and InterfaceTable pointers ***\n");
+
     if(!SCWorld)
         SCWorld = inWorld;
     if(!SCInterfaceTable)
         SCInterfaceTable = inFt;
-    
-    printf("BOOT scsynthRunning: %i\n", scsynthRunning);
+    if(!scsynthRunning)
+        scsynthRunning = 1;
     
     libsupport_init();
     jl_options.julia_bindir = julia_bindir;
@@ -104,102 +110,28 @@ JL_DLLEXPORT void jl_check_SC_world_and_ft(World* inWorld, InterfaceTable* inFt)
         printf("DIFFERENT INTERFACE TABLE\n");
 }
 
-JL_DLLEXPORT void jl_SC_alloc(int malloc_or_calloc, int size_alloc)
+/* __Data__ */
+JL_DLLEXPORT void* jl_rtalloc_sc(size_t inSize)
 {
-    if(malloc_or_calloc == 0)
-    {
-        float* memory_allocated = (float*)RTAlloc(SCWorld, size_alloc * sizeof(float));
-        if(memory_allocated)
-        {
-            printf("*** SC malloc called *** \n");
-            for(int i = 0; i < size_alloc; i++)
-            {
-                memory_allocated[i] = (float)i;
-                printf("Value in SC allocated memory array: %f\n", memory_allocated[i]);
-            }
-        }
-    }
-    else
-    {
-        float* memory_allocated = (float*)RTCalloc(SCWorld, size_alloc, sizeof(float));
-        if(memory_allocated)
-        {
-            printf("*** SC calloc called *** \n");
-            for(int i = 0; i < size_alloc; i++)
-            {
-                memory_allocated[i] = (float)i;
-                printf("Value in SC allocated memory array: %f\n", memory_allocated[i]);
-            }
-        }
-    }
-}
-
-JL_DLLEXPORT void jl_SC_posix_memalign(size_t align, size_t size_alloc)
-{
-    float* memory_allocated_RTAlloc = NULL;
-    float* memory_allocated_SC = NULL;
-    float* memory_allocated = NULL;
+    printf("*** __Data__: CALLING INTO RTALLOC ***\n");
+    void* mem = SC_RTMalloc(SCWorld, inSize);
     
-    printf("Initial addresses: RT: %i, SC_posix_memalign: %i, standard_posix_memalign: %i\n", (uintptr_t)(void*)memory_allocated_RTAlloc, (uintptr_t)(void*)memory_allocated_SC, (uintptr_t)(void*)memory_allocated);
+    //Zero the data
+    if(mem)
+        memset(mem, 0, inSize);
 
-    memory_allocated_RTAlloc = (float*)RTAlloc(SCWorld, size_alloc * sizeof(float));
-
-    if(memory_allocated_RTAlloc)
-    {
-        printf("*** SC malloc called *** \n");
-        /*
-        for(int i = 0; i < size_alloc; i++)
-        {
-            memory_allocated_RTAlloc[i] = (float)i;
-            printf("Value in SC RTAllocated memory array: %f\n", memory_allocated_RTAlloc[i]);
-        }
-        */
-        RTFree(SCWorld, memory_allocated_RTAlloc);
-    }
-
-    if ((uintptr_t)(void*)memory_allocated_RTAlloc % align == 0) 
-        printf("SC RT memory is %i bits aligned\n", (int)align); 
-
-    int result_SC = RTPosix_memalign(SCWorld, (void(**))&memory_allocated_SC, align, size_alloc * sizeof(float));
-    if(!result_SC)
-    {
-        printf("*** SC posix memalign called *** \n");
-        /*
-        for(int i = 0; i < size_alloc; i++)
-        {
-            memory_allocated_SC[i] = (float)i;
-            printf("Value in SC posix memaligned memory array: %f\n", memory_allocated_SC[i]);
-        }
-        */
-        RTFree(SCWorld, memory_allocated_SC);
-    }
-    else
-        printf("ERROR: SC posix memalign error: %i\n", result_SC);
-        
-    if ((uintptr_t)(void*)memory_allocated_SC % align == 0) 
-        printf("SC posix memalign memory is %i bits aligned\n", (int)align); 
-
-    int result = posix_memalign((void(**))&memory_allocated, align, size_alloc * sizeof(float));
-    if(!result)
-    {
-        printf("*** STANDARD posix memalign called *** \n");
-        /*
-        for(int i = 0; i < size_alloc; i++)
-        {
-            memory_allocated[i] = (float)i;
-            printf("Value in standard allocated memory array: %f\n", memory_allocated[i]);
-        }
-        */
-        free(memory_allocated);
-    }
-    else
-        printf("ERROR: Standard posix memalign error: %i\n", result);
-
-    if ((uintptr_t)(void*)memory_allocated % align == 0) 
-        printf("Standard memory is %i bits aligned\n", (int)align); 
-
-    printf("Final addresses: RT: %lu, SC_posix_memalign: %lu, standard_posix_memalign: %lu\n", (uintptr_t)(void*)memory_allocated_RTAlloc, (uintptr_t)(void*)memory_allocated_SC, (uintptr_t)(void*)memory_allocated);
+    return mem;
 }
+
+JL_DLLEXPORT void jl_rtfree_sc(void* inPtr)
+{
+    printf("*** __Data__: CALLING INTO RTFREE ***\n");
+    SC_RTFree(SCWorld, inPtr);
+}
+
+/*********************************************************************/
+/*********************************************************************/
+/*********************************************************************/
 
 JL_DLLEXPORT void jl_init(void)
 {

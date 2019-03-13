@@ -2429,6 +2429,75 @@ JL_DLLEXPORT jl_method_instance_t *jl_lookup_generic_and_compile_SC(jl_value_t *
     return mfunc;
 }
 
+JL_DLLEXPORT jl_value_t* jl_lookup_generic_and_compile_return_value_SC(jl_value_t **args, uint32_t nargs)
+{
+    jl_value_t* return_val;
+    jl_method_instance_t* mfunc;
+
+    JL_TRY {
+        /* Should I, perhaps, only let the include() function to update world_age? */
+        jl_get_ptls_states()->world_age = jl_get_world_counter();
+
+        if(!args[0])
+            jl_error("Could not retrieve method instance");
+
+        mfunc = jl_lookup_generic_(args, nargs, jl_int32hash_fast(jl_return_address()), jl_get_ptls_states()->world_age);
+
+        if(!mfunc)
+            jl_error("Invalid method instance compilation");
+
+        jl_exception_clear();
+    }
+    JL_CATCH {
+        jl_get_ptls_states()->previous_exception = jl_current_exception();
+
+        jl_value_t* exception = jl_exception_occurred();
+        jl_value_t* sprint_fun = jl_get_function(jl_base_module, "sprint");
+        jl_value_t* showerror_fun = jl_get_function(jl_base_module, "showerror");
+
+        if(exception)
+        {
+            const char* returned_exception = jl_string_ptr(jl_call2(sprint_fun, showerror_fun, exception));
+            printf("ERROR: %s\n", returned_exception);
+        }
+
+        mfunc = NULL;
+    }
+
+    //If function retrieved correctly, go ahead with running it. Effectively, compiling it.
+    if(mfunc)
+    {
+        JL_TRY {            
+            if(!mfunc->invoke)
+                jl_error("Invalid invoke method");
+
+            return_val = mfunc->invoke(mfunc, args, nargs);
+
+            if(!return_val)
+                jl_error("Invalid invoke call");
+            
+            jl_exception_clear();
+        }
+        JL_CATCH {
+            jl_get_ptls_states()->previous_exception = jl_current_exception();
+
+            jl_value_t* exception = jl_exception_occurred();
+            jl_value_t* sprint_fun = jl_get_function(jl_base_module, "sprint");
+            jl_value_t* showerror_fun = jl_get_function(jl_base_module, "showerror");
+
+            if(exception)
+            {
+                const char* returned_exception = jl_string_ptr(jl_call2(sprint_fun, showerror_fun, exception));
+                printf("ERROR: %s\n", returned_exception);
+            }
+
+            return_val = NULL;
+        }
+    }
+
+    return return_val;
+}
+
 jl_method_instance_t *jl_lookup_generic(jl_value_t **args, uint32_t nargs, uint32_t callsite,
                                         size_t world)
 {

@@ -1477,7 +1477,11 @@ JL_DLLEXPORT void jl_init(void);
 JL_DLLEXPORT void jl_init_with_image(const char *julia_bindir,
                                      const char *image_relative_path); 
 
-//ENTRY POINT FOR SUPERCOLLIDER
+/*********************************************************************/
+/*                     SUPERCOLLIDER FUNCTIONS                       */
+/*********************************************************************/
+
+/* jlapi.c */
 JL_DLLEXPORT void jl_init_with_image_SC(const char *julia_bindir,
                                      const char *image_relative_path, 
                                      struct World* inWorld,
@@ -1485,13 +1489,24 @@ JL_DLLEXPORT void jl_init_with_image_SC(const char *julia_bindir,
 
 JL_DLLEXPORT void jl_check_SC_world_and_ft(struct World* inWorld, struct InterfaceTable* inFt);
 
-JL_DLLEXPORT void jl_SC_alloc(int malloc_or_calloc, int size_alloc);
+//__Data__ RTAlloc and RTFree
+JL_DLLEXPORT void* jl_rtalloc_sc(size_t inSize);
+JL_DLLEXPORT void jl_rtfree_sc(void* inPtr);
 
-JL_DLLEXPORT void jl_SC_posix_memalign(size_t align, size_t size_alloc);
+/* gf.c */
+JL_DLLEXPORT jl_method_instance_t *jl_lookup_generic_SC(jl_value_t **args, uint32_t nargs);
+JL_DLLEXPORT jl_method_instance_t *jl_lookup_generic_and_compile_SC(jl_value_t **args, uint32_t nargs);
+JL_DLLEXPORT jl_value_t *jl_lookup_generic_and_compile_return_value_SC(jl_value_t **args, uint32_t nargs);
+JL_DLLEXPORT jl_value_t *jl_invoke_SC(jl_method_instance_t *meth, jl_value_t **args, uint32_t nargs);
+JL_DLLEXPORT jl_value_t *jl_invoke_exception_SC(jl_method_instance_t *meth, jl_value_t **args, uint32_t nargs);
+JL_DLLEXPORT jl_value_t *jl_invoke_already_compiled_SC(jl_method_instance_t *meth, jl_value_t **args, uint32_t nargs);
 
 JL_DLLEXPORT int jl_compile_hint_SC(jl_tupletype_t *types);
-
 JL_DLLEXPORT jl_method_instance_t *jl_get_specialization1_SC(jl_tupletype_t *types JL_PROPAGATES_ROOT, size_t world, int mt_cache);
+
+/*********************************************************************/
+/*********************************************************************/
+/*********************************************************************/
 
 JL_DLLEXPORT const char *jl_get_default_sysimg_path(void);
 JL_DLLEXPORT int jl_is_initialized(void);
@@ -1584,13 +1599,6 @@ STATIC_INLINE int jl_vinfo_usedundef(uint8_t vi)
 }
 
 // calling into julia ---------------------------------------------------------
-
-JL_DLLEXPORT jl_method_instance_t *jl_lookup_generic_SC(jl_value_t **args, uint32_t nargs);
-JL_DLLEXPORT jl_method_instance_t *jl_lookup_generic_and_compile_SC(jl_value_t **args, uint32_t nargs);
-JL_DLLEXPORT jl_value_t *jl_invoke_SC(jl_method_instance_t *meth, jl_value_t **args, uint32_t nargs);
-JL_DLLEXPORT jl_value_t *jl_invoke_exception_SC(jl_method_instance_t *meth, jl_value_t **args, uint32_t nargs);
-JL_DLLEXPORT jl_value_t *jl_invoke_already_compiled_SC(jl_method_instance_t *meth, jl_value_t **args, uint32_t nargs);
-
 JL_DLLEXPORT jl_value_t *jl_apply_generic(jl_value_t **args, uint32_t nargs);
 JL_DLLEXPORT jl_value_t *jl_invoke(jl_method_instance_t *meth, jl_value_t **args, uint32_t nargs);
 JL_DLLEXPORT int32_t jl_invoke_api(jl_method_instance_t *mi);

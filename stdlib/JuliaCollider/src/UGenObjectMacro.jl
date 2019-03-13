@@ -158,6 +158,10 @@ macro object(name, body)
             #__SCSynth__
             import JuliaCollider.SCSynth.__SCSynth__
             #import Main.JuliaCollider.SCSynth.__SCSynth__
+
+            #__Data__
+            using JuliaCollider.Data
+            #using Main.JuliaCollider.Data
             
             #inner macros definitions
             $macro_to_get_names_and_types

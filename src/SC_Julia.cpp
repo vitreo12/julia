@@ -2,6 +2,9 @@
 #include <cstdio>
 #include <exception>
 
+//For jl_nothing
+//#include <julia.h>
+
 extern "C" 
 {
 	/* INIT GLOBAL VARIABLES */
@@ -28,6 +31,7 @@ extern "C"
 				a = zeros(10000) -> memory error
 				println(a) -> wouldn't know how to print a NULL, but it would for a jl_nothing */
 				alloc_memory = NULL;
+				//alloc_memory = (void*)jl_nothing;
 			}
 
 			return alloc_memory;
@@ -54,6 +58,7 @@ extern "C"
 				a = zeros(10000) -> memory error
 				println(a) -> wouldn't know how to print a NULL, but it would for a jl_nothing */
 				alloc_memory = NULL;
+				//alloc_memory = (void*)jl_nothing;
 			}
 
 			return alloc_memory;
@@ -64,8 +69,11 @@ extern "C"
 
 	void SC_RTFree(World* inWorld, void* inPtr)
 	{
+		if(!inPtr)
+			return;
+			
 		if(scsynthRunning)
-			RTFree(inWorld, inPtr); //RTFree (as does standard free) already checks for validity of pointer
+			RTFree(inWorld, inPtr);
 		else
 			free(inPtr);
 	}
@@ -88,6 +96,7 @@ extern "C"
 				a = zeros(10000) -> memory error
 				println(a) -> wouldn't know how to print a NULL, but it would for a jl_nothing */
 			alloc_memory = NULL;
+			//alloc_memory = (void*)jl_nothing;
 		}
 
 		return alloc_memory; 
@@ -133,6 +142,7 @@ extern "C"
 				a = zeros(10000) -> memory error
 				println(a) -> wouldn't know how to print a NULL, but it would for a jl_nothing */
 				mem = NULL;
+				//mem = (void*)jl_nothing;
 			}
 			if (!mem)
 				return ENOMEM;
@@ -154,6 +164,7 @@ extern "C"
 				a = zeros(10000) -> memory error
 				println(a) -> wouldn't know how to print a NULL, but it would for a jl_nothing */
 			mem = NULL;
+			//mem = (void*)jl_nothing;
 		}
 		if (!mem)
 			return ENOMEM;

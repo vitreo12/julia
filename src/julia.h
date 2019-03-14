@@ -1489,9 +1489,28 @@ JL_DLLEXPORT void jl_init_with_image_SC(const char *julia_bindir,
 
 JL_DLLEXPORT void jl_check_SC_world_and_ft(struct World* inWorld, struct InterfaceTable* inFt);
 
+JL_DLLEXPORT void* jl_get_SCWorld();
+
 //__Data__ RTAlloc and RTFree
 JL_DLLEXPORT void* jl_rtalloc_sc(size_t inSize);
 JL_DLLEXPORT void jl_rtfree_sc(void* inPtr);
+
+/* Julia.cpp (JuliaCollider source) */
+//__Buffer__
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+JL_DLLEXPORT extern void jl_get_buf_shared_SC(jl_value_t* buffer_object, float fbufnum);
+JL_DLLEXPORT extern float jl_get_float_value_buf_SC(void* buf, size_t index, size_t channel);
+JL_DLLEXPORT extern void jl_set_float_value_buf_SC(void* buf, float value, size_t index, size_t channel);
+JL_DLLEXPORT extern int jl_get_frames_buf_SC(void* buf);
+JL_DLLEXPORT extern int jl_get_samples_buf_SC(void* buf);
+JL_DLLEXPORT extern int jl_get_channels_buf_SC(void* buf);
+
+#ifdef __cplusplus
+}
+#endif
 
 /* gf.c */
 JL_DLLEXPORT jl_method_instance_t *jl_lookup_generic_SC(jl_value_t **args, uint32_t nargs);

@@ -110,6 +110,14 @@ JL_DLLEXPORT void jl_check_SC_world_and_ft(World* inWorld, InterfaceTable* inFt)
         printf("DIFFERENT INTERFACE TABLE\n");
 }
 
+JL_DLLEXPORT void* jl_get_SCWorld()
+{
+    if(!scsynthRunning)
+        return NULL;
+
+    return (void*)SCWorld;
+}
+
 /* __Data__ */
 JL_DLLEXPORT void* jl_rtalloc_sc(size_t inSize)
 {

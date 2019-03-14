@@ -162,6 +162,10 @@ macro object(name, body)
             #__Data__
             using JuliaCollider.Data
             #using Main.JuliaCollider.Data
+
+            #__Buffer__
+            using JuliaCollider.Buffer
+            #using Main.JuliaCollider.Data
             
             #inner macros definitions
             $macro_to_get_names_and_types

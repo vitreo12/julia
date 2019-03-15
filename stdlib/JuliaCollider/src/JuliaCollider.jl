@@ -2,8 +2,8 @@ module JuliaCollider
 
 include("JuliaDef.jl")
 include("SCSynth.jl")
-include("Data.jl")
-include("Buffer.jl")
+include("SCData.jl")
+include("SCBuffer.jl")
 include("UGenObjectMacro.jl")
 include("UGenMacros.jl")
 

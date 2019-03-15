@@ -114,29 +114,57 @@ macro object(name, body)
 
     local function_to_create_perform = :(
         function __define_perform__()
-            unroll_constructor_variables = Any[]  
+            
+            unroll_constructor_variables_perform = Any[]  
+            
             for arg in __args_with_types__
                 var_name = arg[1]
                 var_type = arg[2]
-                push!(unroll_constructor_variables, :($(var_name)::$(var_type) = __unit__.$(var_name)))
+                push!(unroll_constructor_variables_perform, :($(var_name)::$(var_type) = __unit__.$(var_name)))
 
                 #= If it's a Buffer, also run the __get_shared_buf__ command for the specific input that's been set in Buffer constructor (Buffer.input_num)
                 There is no need to do input checking, as it's outside the @sample macro (where access is @inbounds), and, thus, it's boundschecked =#
-                if(var_type == Buffer)
-                    push!(unroll_constructor_variables, :(__get_shared_buf__($(var_name), __ins__[$(var_name).input_num][1])))
+                if(var_type <: Buffer)
+                    push!(unroll_constructor_variables_perform, :(__get_shared_buf__($(var_name), __ins__[$(var_name).input_num][1])))
                 end
             end   
-            
+
             #User can access __unit__ elemtns by simply calling them. They have been unrolled in the unroll_constructor_variables array
             perform_definition = :(
                 function __perform__(__unit__::__UGen__, __ins__::Vector{Vector{Float32}}, __outs__::Vector{Vector{Float32}}, __buffer_size__::Int32, __server__::__SCSynth__)
-                    $(unroll_constructor_variables...)
+                    $(unroll_constructor_variables_perform...)
                     $(__perform_body__...)
                     return nothing
                 end
             )
 
             return perform_definition
+        end
+    )
+
+    local function_to_create_destructor = :(
+        function __define_destructor__()
+            
+            unroll_constructor_variables_destructor = Any[]  
+            
+            for arg in __args_with_types__
+                var_name = arg[1]
+                var_type = arg[2]
+                
+                #Insert the __DataFree__ to free all allocated Data when calling destructor
+                if(var_type <: Data)
+                    push!(unroll_constructor_variables_destructor, :(__DataFree__(__unit__.$(var_name))))
+                end
+            end 
+
+            destructor_definition = :(
+                function __destructor__(__unit__::__UGen__)
+                    $(unroll_constructor_variables_destructor...)
+                    return nothing
+                end
+            )
+            
+            return destructor_definition
         end
     )
 
@@ -218,6 +246,9 @@ macro object(name, body)
             $macro_to_get_perform_body
             $function_to_parse_perform_body
             $function_to_create_perform
+
+            #__destructor__
+            $function_to_create_destructor
             
             #Actual body of @object
             $quoted_julia_code

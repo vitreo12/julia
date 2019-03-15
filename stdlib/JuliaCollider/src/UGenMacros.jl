@@ -191,15 +191,19 @@ end
 macro perform(arguments)
     local body = arguments.args
 
-    local perform_definition = quote
+    local perform_and_destructor_definitions = quote
         @__get_perform_body__($(body...))
 
         __parse_perform_body__()
 
+        #Define __perform__ function
         eval(__define_perform__())
+        
+        #Define __destructor__ function to free Data allocations
+        eval(__define_destructor__())
     end
 
-    return esc(:($perform_definition))
+    return esc(:($perform_and_destructor_definitions))
 end
 
 #Should @inbounds be here or at every array access? I can't be sure that the user will be accessing his own buffers
@@ -272,7 +276,7 @@ macro bufSize()
     return esc(:(__server__.bufferSize))
 end
 
-macro destructor(arguments)
+#= macro destructor(arguments)
     local body = arguments.args
 
     local destructor_definition = :(
@@ -282,6 +286,6 @@ macro destructor(arguments)
     )
 
     return esc(:($destructor_definition))
-end
+end =#
 
 end

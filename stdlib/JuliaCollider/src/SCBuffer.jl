@@ -3,8 +3,10 @@ module SCBuffer
 
     export Buffer, __get_shared_buf__, nchans
 
-    #= I COULD JUST HAVE THE snd_buf* pointer =#
-    mutable struct Buffer
+    #= Perhaps, this could just be a struct?
+    MAYBE crashes on gc_assert_datatype_fail were caused by 
+    this???? =#
+    struct Buffer
         SCWorld::Ptr{Cvoid}
         snd_buf::Ptr{Cvoid}
         bufnum::Float32

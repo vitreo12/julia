@@ -58,7 +58,7 @@ macro object(name, body)
         end
     )
     
-    #Need to parse the array of Symbols...
+    #Need to parse the array of Symbols into a Julia list of valid Exprs, replacing values in the same __constructor_body__ global array.
     local function_to_parse_constructor_body = :(
         function __parse_constructor_body__()
             for i = 1 : length(__constructor_body__)
@@ -86,25 +86,59 @@ macro object(name, body)
                 end
             )
             
-            #println(constructor_definition)
             #to be evaluated...
             return constructor_definition
         end
     )
 
-    #struct that will hold num of inputs, outputs, name, to be sent to sclang
-    local ugen_graph_definition = :(
-        struct __UGenGraph__
-            name::Symbol
-            inputs::Int32
-            input_names
-            outputs::Int32
-            output_names
+    local macro_to_get_perform_body = :(
+        macro __get_perform_body__(exs...)
+            blk = Expr(:block)
+            push!(blk.args, :(global __perform_body__ = []))
+            for ex in exs
+                push!(blk.args, :((push!(__perform_body__, ((Symbol($(string(ex)))))))))
+            end
+            return blk
         end
     )
-    
-    #inputs and outputs will already be declared at this point...
-    local create_ugen_graph = :(__ugen_graph__ = __UGenGraph__(nameof($name), __inputs__, __input_names__, __outputs__, __output_names__))
+
+    #Need to parse the array of Symbols into a Julia list of valid Exprs, replacing values in the same __perform_body__ global array.
+    local function_to_parse_perform_body = :(
+        function __parse_perform_body__()
+            for i = 1 : length(__perform_body__)
+                this_line = __perform_body__[i]
+                __perform_body__[i] = Base.parse_input_line(String(this_line))
+            end
+        end
+    )
+
+    local function_to_create_perform = :(
+        function __define_perform__()
+            unroll_constructor_variables = Any[]  
+            for arg in __args_with_types__
+                var_name = arg[1]
+                var_type = arg[2]
+                push!(unroll_constructor_variables, :($(var_name)::$(var_type) = __unit__.$(var_name)))
+
+                #= If it's a Buffer, also run the __get_shared_buf__ command for the specific input that's been set in Buffer constructor (Buffer.input_num)
+                There is no need to do input checking, as it's outside the @sample macro (where access is @inbounds), and, thus, it's boundschecked =#
+                if(var_type == Buffer)
+                    push!(unroll_constructor_variables, :(__get_shared_buf__($(var_name), __ins__[$(var_name).input_num][1])))
+                end
+            end   
+            
+            #User can access __unit__ elemtns by simply calling them. They have been unrolled in the unroll_constructor_variables array
+            perform_definition = :(
+                function __perform__(__unit__::__UGen__, __ins__::Vector{Vector{Float32}}, __outs__::Vector{Vector{Float32}}, __buffer_size__::Int32, __server__::__SCSynth__)
+                    $(unroll_constructor_variables...)
+                    $(__perform_body__...)
+                    return nothing
+                end
+            )
+
+            return perform_definition
+        end
+    )
 
     #unique_id used when retrieving a JuliaDef by name
     local unique_id_def_and_setter = quote
@@ -159,31 +193,34 @@ macro object(name, body)
             import JuliaCollider.SCSynth.__SCSynth__
             #import Main.JuliaCollider.SCSynth.__SCSynth__
 
-            #__Data__
-            using JuliaCollider.Data
-            #using Main.JuliaCollider.Data
+            #Data
+            using JuliaCollider.SCData
+            import JuliaCollider.SCData.Data
+            #using Main.JuliaCollider.SCData
+            #import Main.JuliaCollider.SCData.Data
 
-            #__Buffer__
-            using JuliaCollider.Buffer
-            #using Main.JuliaCollider.Data
+            #Buffer
+            using JuliaCollider.SCBuffer
+            import JuliaCollider.SCBuffer.Buffer
+            #using Main.JuliaCollider.SCBuffer
+            #import Main.JuliaCollider.SCBuffer.Buffer
             
-            #inner macros definitions
+            #Inner macros definitions
             $macro_to_get_names_and_types
             $macro_to_get_constructor_body
             
-            #inner function definitions for creating __UGen__ struct and its constructor
+            #Inner function definitions for creating __UGen__ struct and its constructor
             $function_to_define_struct
-            $function_to_create_outer_constructor
             $function_to_parse_constructor_body
+            $function_to_create_outer_constructor
             
-            #__UGenGraph__ definition
-            $ugen_graph_definition
+            #__perform__
+            $macro_to_get_perform_body
+            $function_to_parse_perform_body
+            $function_to_create_perform
             
             #Actual body of @object
             $quoted_julia_code
-            
-            #Create __UGenGraph__
-            $create_ugen_graph
             
             #Unique_id
             $unique_id_def_and_setter

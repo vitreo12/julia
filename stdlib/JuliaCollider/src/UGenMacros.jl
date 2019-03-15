@@ -1,6 +1,6 @@
 module UGenMacros
 
-export @inputs, @outputs, @constructor, @new, @perform, @sample, @sample_index, @destructor, @unit, @in, @in0, @out, @sampleRate, @bufSize
+export @inputs, @outputs, @constructor, @new, @perform, @sample, @sample_index, @destructor, @unit, @in0, @in, @out, @sampleRate, @bufSize
 
 #All these macros need to be ran by an eval() call in the respective module
 macro inputs(num_of_inputs, tuple_input_names)
@@ -167,10 +167,10 @@ macro constructor(body)
         2) __constructor_body__ is defined in @__get_constructor_body__
         =#
 
-        #execute the function to get the types under the @object scope
+        #execute the function to get the types under the @constructor and @new scopes
         __get_args_with_types__()
 
-        #define UGen struct
+        #define __UGen__ struct
         eval(__define_struct__())
 
         #Pass the julia code to the @__get_constructor_body__ macro that will transform it in an array of symbols stored in the global variable __constructor_body__
@@ -190,13 +190,14 @@ end
 
 macro perform(arguments)
     local body = arguments.args
-    
-    local perform_definition = :(
-        function __perform__(__unit__::__UGen__, __ins__::Vector{Vector{Float32}}, __outs__::Vector{Vector{Float32}}, __buffer_size__::Int32, __server__::__SCSynth__)
-            $(body...)
-            return nothing
-        end
-    )
+
+    local perform_definition = quote
+        @__get_perform_body__($(body...))
+
+        __parse_perform_body__()
+
+        eval(__define_perform__())
+    end
 
     return esc(:($perform_definition))
 end
@@ -224,7 +225,7 @@ macro in0(input_number)
         error("@in0: Input number $input_number out of bounds. Maximum is $__macro_inputs_count__")
     end
     if(input_number < 1)
-        error("in0: Output number $input_number out of bounds. Counting starts from 1")
+        error("@in0: Input number $input_number out of bounds. Counting starts from 1")
     end
     
     return esc(:(__ins__[$input_number][1]))
@@ -235,7 +236,7 @@ macro in(input_number)
         error("@in: Input number $input_number out of bounds. Maximum is $__macro_inputs_count__")
     end
     if(input_number < 1)
-        error("in: Output number $input_number out of bounds. Counting starts from 1")
+        error("@in: Input number $input_number out of bounds. Counting starts from 1")
     end
 
     return esc(:(__ins__[$input_number][__sample_index__]))
@@ -246,7 +247,7 @@ macro out(output_number)
         error("@out: Output number $output_number out of bounds. Maximum is $__macro_outputs_count__")
     end
     if(output_number < 1)
-        error("out: Output number $output_number out of bounds. Counting starts from 1")
+        error("@out: Output number $output_number out of bounds. Counting starts from 1")
     end
 
     return esc(:(__outs__[$output_number][__sample_index__]))

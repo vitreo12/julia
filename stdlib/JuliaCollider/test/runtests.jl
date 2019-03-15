@@ -6,11 +6,11 @@ using JuliaCollider
 # When doing tests outside of the Julia build, below should be "using Main.JuliaCollider..."
 using JuliaCollider.SCSynth
 using JuliaCollider.UGenObjectMacro
-using Main.JuliaCollider.SCSynth
-using Main.JuliaCollider.UGenObjectMacro
+#using Main.JuliaCollider.SCSynth
+#using Main.JuliaCollider.UGenObjectMacro
 
 @object Sine begin
-    @inputs 1 ("frequency")
+    @inputs 2
     @outputs 2
 
     #Declaration of structs (possibly, include() calls aswell)
@@ -26,6 +26,12 @@ using Main.JuliaCollider.UGenObjectMacro
         phasor::Phasor = Phasor()
         counter::Float64 = 1.0
 
+        #Input number as input
+        #buffer::Buffer = Buffer(2)
+
+        #Allocate memory
+        #my_data::Data = Data(Float32, 100)
+
         #Must always be last.
         @new(phasor, counter)
     end
@@ -36,21 +42,21 @@ using Main.JuliaCollider.UGenObjectMacro
         frequency_kr::Float64 = @in0(1)
 
         @sample begin
-            phase::Float64 = @unit(phasor.p) #equivalent to __unit__.phasor.p
+            phase::Float64 = phasor.p 
             
             frequency::Float64 = @in(1)
-            
-            if(phase >= 1.0)
-                phase = 0.0
-            end
             
             out_value::Float64 = cos(phase * 2pi)
             
             @out(1) = out_value
             
             phase += frequency / (sampleRate - 1)
+
+            if(phase >= 1.0)
+                phase = 0.0
+            end
             
-            @unit(phasor.p) = phase
+            phasor.p = phase
         end
     end
 
@@ -60,17 +66,21 @@ end
 
 buffer_size = Int32(512)
 
-ins = Vector{Vector{Float32}}(undef, 1)
+ins = Vector{Vector{Float32}}(undef, 2)
 ins[1] = 440 * ones(Float32, buffer_size) #frequency = 440hz
+ins[2] = zeros(Float32, buffer_size) 
 
-outs = Vector{Vector{Float32}}(undef, 1)
+outs = Vector{Vector{Float32}}(undef, 2)
 outs[1] = zeros(Float32, buffer_size)
+outs[2] = zeros(Float32, buffer_size)
 
 obj = Sine.__constructor__()
-scsynth = __SCSynth__(44100.0, buffer_size)
+scsynth = JuliaCollider.SCSynth.__SCSynth__(44100.0, buffer_size)
 
-using BenchmarkTools
+Sine.__perform__(obj, ins, outs, buffer_size, scsynth)
+
+#using BenchmarkTools
 
 #They should have same speed... even with the test on @unit.
-@benchmark Sine.__perform__(obj, ins, outs, buffer_size, scsynth)
+#@benchmark Sine.__perform__(obj, ins, outs, buffer_size, scsynth)
 =#

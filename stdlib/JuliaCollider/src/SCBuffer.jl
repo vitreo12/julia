@@ -6,7 +6,7 @@ module SCBuffer
     #= Perhaps, this could just be a struct?
     MAYBE crashes on gc_assert_datatype_fail were caused by 
     this???? =#
-    struct Buffer
+    mutable struct Buffer
         SCWorld::Ptr{Cvoid}
         snd_buf::Ptr{Cvoid}
         bufnum::Float32
@@ -26,8 +26,8 @@ module SCBuffer
             return nothing
         end
         
+        #= Both to be changed in jl_get_buf_shared_SC =#
         snd_buf::Ptr{Cvoid} = C_NULL
-
         bufnum::Float32 = Float32(-1e9)
 
         return Buffer(SCWorld, snd_buf, bufnum, input_num)

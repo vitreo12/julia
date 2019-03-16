@@ -3,9 +3,6 @@ module SCBuffer
 
     export Buffer, __get_shared_buf__, nchans
 
-    #= Perhaps, this could just be a struct?
-    MAYBE crashes on gc_assert_datatype_fail were caused by 
-    this???? =#
     mutable struct Buffer
         SCWorld::Ptr{Cvoid}
         snd_buf::Ptr{Cvoid}
@@ -26,8 +23,8 @@ module SCBuffer
             return nothing
         end
         
-        #= Both to be changed in jl_get_buf_shared_SC =#
         snd_buf::Ptr{Cvoid} = C_NULL
+        
         bufnum::Float32 = Float32(-1e9)
 
         return Buffer(SCWorld, snd_buf, bufnum, input_num)
@@ -36,8 +33,17 @@ module SCBuffer
     #= THESE FUNCTIONS ARE ALL DEFINED IN Julia.cpp =#
 
     #Returns Nothing
-    function __get_shared_buf__(buffer::Buffer, bufnum::Float32)
-        ccall(:jl_get_buf_shared_SC, Cvoid, (Any, Cfloat), buffer, bufnum)
+    function __get_shared_buf__(buffer::Buffer, fbufnum::Float32)
+        if(fbufnum < 0.0)
+            fbufnum = 0.0
+        end
+    
+        if(buffer.bufnum != fbufnum)
+            buffer.bufnum = fbufnum
+            buffer.snd_buf = ccall(:jl_get_buf_shared_SC, Ptr{Cvoid}, (Ptr{Cvoid}, Cfloat,), buffer.SCWorld, fbufnum)
+        end
+    
+        return nothing
     end
 
     import Base.getindex

@@ -1501,7 +1501,7 @@ JL_DLLEXPORT void jl_rtfree_sc(void* inPtr);
 extern "C" {
 #endif
 
-JL_DLLEXPORT extern void jl_get_buf_shared_SC(jl_value_t* buffer_object, float fbufnum);
+JL_DLLEXPORT extern void* jl_get_buf_shared_SC(void* buffer_SCWorld, float fbufnum);
 JL_DLLEXPORT extern float jl_get_float_value_buf_SC(void* buf, size_t index, size_t channel);
 JL_DLLEXPORT extern void jl_set_float_value_buf_SC(void* buf, float value, size_t index, size_t channel);
 JL_DLLEXPORT extern int jl_get_frames_buf_SC(void* buf);

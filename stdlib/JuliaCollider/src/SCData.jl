@@ -26,7 +26,7 @@ module SCData
         end
     end
 
-    #In case user forgets to delete data, finalizer will be executed at next GC if UGen has been released.
+    #In case a Data won't be picked by the recursive __find_data_type__, add a finalizer to be executed at next GC
     function __DataFinalizer__(data::Data)
         println("*** FINALIZING data ***")
         

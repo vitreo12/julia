@@ -122,6 +122,24 @@ macro object(name, body)
                 var_type = arg[2]
                 push!(unroll_constructor_variables_perform, :($(var_name)::$(var_type) = __unit__.$(var_name)))
 
+                #================================================#
+                #================================================#
+                #= IT WORKS, BUT IT SLOWS THINGS QUITE A BIT... =# 
+                #================================================#
+                #================================================#
+                
+                #Recursively find Buffer for this var_name/var_type. It expects that the full
+                #var_type is defined, up until Buffer.
+                final_path_buffer::Vector{Symbol} = __find_data_type__(SCBuffer.Buffer, var_name, var_type)
+
+                #If not empty, push it to unroll_constructor_variables_destructor
+                if(!isempty(final_path_buffer))
+                    for this_final_path in final_path_buffer
+                        #Since the Vector{Symbol} returned is not parsed, I need to parse it in here to create a valid Expr
+                        push!(unroll_constructor_variables_perform, Base.parse_input_line("__get_shared_buf__(__unit__.$(this_final_path), __ins__[__unit__.$(this_final_path).input_num][1])"))
+                    end
+                end
+
                 #= If it's a Buffer, also run the __get_shared_buf__ command for the specific input that's been set in Buffer constructor (Buffer.input_num)
                 There is no need to do input checking, as it's outside the @sample macro (where access is @inbounds), and, thus, it's boundschecked =#
                 if(var_type <: Buffer)
@@ -150,6 +168,24 @@ macro object(name, body)
             for arg in __args_with_types__
                 var_name = arg[1]
                 var_type = arg[2]
+
+                #================================================#
+                #================================================#
+                #= IT WORKS, BUT IT SLOWS THINGS QUITE A BIT... =# 
+                #================================================#
+                #================================================#
+                
+                #Recursively find Data for this var_name/var_type. It expects that the full
+                #var_type is defined, up until Data.
+                final_path_data::Vector{Symbol} = __find_data_type__(SCData.Data, var_name, var_type)
+
+                #If not empty, push it to unroll_constructor_variables_destructor. 
+                if(!isempty(final_path_data))
+                    for this_final_path in final_path_data
+                        #Since the Symbol returned is not parsed, I need to parse it in here to create a valid Expr
+                        push!(unroll_constructor_variables_destructor, Base.parse_input_line("__DataFree__(__unit__.$(this_final_path))")) 
+                    end
+                end
                 
                 #Insert the __DataFree__ to free all allocated Data when calling destructor
                 if(var_type <: Data)
@@ -225,6 +261,10 @@ macro object(name, body)
             #@inputs, @outputs, etc...
             using JuliaCollider.UGenMacros
             #using Main.JuliaCollider.UGenMacros
+
+            #SCUtilities
+            using JuliaCollider.SCUtilities
+            #using Main.JuliaCollider.SCUtilities
             
             #__SCSynth__
             import JuliaCollider.SCSynth.__SCSynth__

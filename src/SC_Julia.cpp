@@ -7,7 +7,8 @@ extern "C"
 	/* INIT GLOBAL VARIABLES */
 	int scsynthRunning = 0;
 	World* SCWorld = NULL;
-	InterfaceTable* SCInterfaceTable = NULL;
+	JuliaAllocPool* julia_alloc_pool = NULL;
+	JuliaAllocFuncs* julia_alloc_funcs = NULL;
 
 	void* RT_memory_start = NULL;
 	size_t RT_memory_size = 0;
@@ -15,14 +16,15 @@ extern "C"
 	uintptr_t RT_memory_size_uint = 0;
 
 	/* RTALLOC WRAPPER FUNCTIONS */
-	void* SC_RTMalloc(World* inWorld, size_t inSize)
+	void* SC_RTMalloc(JuliaAllocPool* inPool, size_t inSize)
 	{
 		if(scsynthRunning)
 		{
 			void* alloc_memory;
 			try
 			{
-				alloc_memory = RTAlloc(inWorld, inSize);
+				//printf("ALLOCPOOL: %zu\n", (uintptr_t)julia_alloc_pool);
+				alloc_memory = RTAlloc(julia_alloc_pool, inSize);
 			}
 			catch (...) //RT memory exception. Return normal malloc(). It will be dealt with in SC_RTFree()
 			{
@@ -39,7 +41,7 @@ extern "C"
 
 	/* Previous area might have been allocated with RTAlloc, so results would be undefined for normal realloc.
 	There is the need to RTFree previous memory and allocate new one. */
-	void* manual_realloc(World* inWorld, void* inPtr, size_t inSize)
+	void* manual_realloc(JuliaAllocPool* inPool, void* inPtr, size_t inSize)
 	{
 		uintptr_t inPtr_uint = (uintptr_t)inPtr;
 
@@ -57,7 +59,7 @@ extern "C"
 		//if size is 0, RTFree the memory and return NULL
 		if(inSize == 0)
 		{
-			RTFree(inWorld, inPtr);
+			RTFree(julia_alloc_pool, inPtr);
 			return NULL;
 		}
 
@@ -74,26 +76,26 @@ extern "C"
 		memcpy(mem, inPtr, inSize);
 
 		//Free old pointer
-		RTFree(inWorld, inPtr);
+		RTFree(julia_alloc_pool, inPtr);
 		
 		//Return new allocated memory.
 		return mem;
 	}
 
-	void* SC_RTRealloc(World* inWorld, void *inPtr, size_t inSize)
+	void* SC_RTRealloc(JuliaAllocPool* inPool, void *inPtr, size_t inSize)
 	{
 		if(scsynthRunning)
 		{
 			void* alloc_memory;
 			try
 			{
-				alloc_memory = RTRealloc(inWorld, inPtr, inSize);
+				alloc_memory = RTRealloc(julia_alloc_pool, inPtr, inSize);
 			}
 			catch (...) //RT memory exception. Return normal realloc(). It will be dealt with in SC_RTFree()
 			{
 				printf("WARNING: Julia could not allocate RT memory. Using normal allocator. Run the GC. \n");
 
-				alloc_memory = manual_realloc(inWorld, inPtr, inSize);
+				alloc_memory = manual_realloc(julia_alloc_pool, inPtr, inSize);
 			}
 
 			return alloc_memory;
@@ -102,7 +104,7 @@ extern "C"
 			return realloc(inPtr, inSize);
 	}
 
-	void SC_RTFree(World* inWorld, void* inPtr)
+	void SC_RTFree(JuliaAllocPool* inPool, void* inPtr)
 	{
 		if(!inPtr)
 			return;
@@ -120,18 +122,18 @@ extern "C"
 		printf("RT_memory_siz: %zu\n", RT_memory_size_uint); */
 
 		if(scsynthRunning && is_memory_RT)
-			RTFree(inWorld, inPtr);
+			RTFree(julia_alloc_pool, inPtr);
 		else
 			free(inPtr);
 	}
 
-	void* RTCalloc(World* inWorld, size_t nitems, size_t inSize)
+	void* RTCalloc(JuliaAllocPool* inPool, size_t nitems, size_t inSize)
 	{
 		void* alloc_memory;
 		try
 		{
 			size_t length = inSize * nitems;
-			alloc_memory = RTAlloc(inWorld, length);
+			alloc_memory = RTAlloc(julia_alloc_pool, length);
 			memset(alloc_memory, 0, length);
 		}
 		catch (...) //RT memory exception. Return normal calloc(). It will be dealt with in SC_RTFree()
@@ -144,16 +146,16 @@ extern "C"
 		return alloc_memory; 
 	}
 
-	void* SC_RTCalloc(World* inWorld, size_t nitems, size_t inSize)
+	void* SC_RTCalloc(JuliaAllocPool* inPool, size_t nitems, size_t inSize)
 	{
 		if(scsynthRunning)
-			return RTCalloc(inWorld, nitems, inSize);
+			return RTCalloc(julia_alloc_pool, nitems, inSize);
 		else
 			return calloc(nitems, inSize);
 	}
 
 	//ADD CREDITS: https://github.com/chneukirchen/musl-chris2/blob/master/src/malloc/posix_memalign.c
-	int RTPosix_memalign(World* inWorld, void **res, size_t align, size_t len)
+	int RTPosix_memalign(JuliaAllocPool* inPool, void **res, size_t align, size_t len)
 	{
 		unsigned char *mem, *newAlloc, *end;
 		size_t header, footer;
@@ -173,7 +175,7 @@ extern "C"
 		{
 			try
 			{
-				mem = (unsigned char*)RTAlloc(inWorld, len);
+				mem = (unsigned char*)RTAlloc(julia_alloc_pool, len);
 			}
 			catch (...) //RT memory exception. Return normal malloc(). It will be dealt with in SC_RTFree()
 			{
@@ -190,7 +192,7 @@ extern "C"
 		
 		try
 		{
-			mem = (unsigned char*)RTAlloc(inWorld, len + align-1);
+			mem = (unsigned char*)RTAlloc(julia_alloc_pool, len + align-1);
 		}
 		catch (...) //RT memory exception. Return normal malloc(). It will be dealt with in SC_RTFree()
 		{
@@ -220,16 +222,16 @@ extern "C"
 		((size_t *)end)[-2] = footer&7 | end-newAlloc;
 
 		if (newAlloc != mem) 
-			SC_RTFree(inWorld, mem);
+			SC_RTFree(julia_alloc_pool, mem);
 
 		*res = newAlloc;
 		return 0;
 	}
 
-	int SC_RTPosix_memalign(World* inWorld, void **res, size_t align, size_t len)
+	int SC_RTPosix_memalign(JuliaAllocPool* inPool, void **res, size_t align, size_t len)
 	{
 		if(scsynthRunning)
-			return RTPosix_memalign(inWorld, res, align, len);
+			return RTPosix_memalign(inPool, res, align, len);
 		else
 			return posix_memalign(res, align, len);
 	}

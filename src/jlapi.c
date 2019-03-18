@@ -65,14 +65,15 @@ JL_DLLEXPORT void jl_init_with_image(const char *julia_bindir,
 JL_DLLEXPORT void jl_init_with_image_SC(const char *julia_bindir,
                                      const char *image_relative_path,
                                      World* inWorld,
-                                     InterfaceTable* inFt,
+                                     JuliaAllocPool* julia_alloc_pool_,
+                                     JuliaAllocFuncs* julia_alloc_funcs_,
                                      void* RT_memory_start_,
                                      size_t RT_memory_size_)
 {
     if (jl_is_initialized())
         return;
     
-    if(!inWorld || !inFt)
+    if(!inWorld || !julia_alloc_pool_)
     {
         printf("ERROR: Invalid World* and InterfaceTable*: Julia won't boot \n");   
         return;
@@ -82,8 +83,10 @@ JL_DLLEXPORT void jl_init_with_image_SC(const char *julia_bindir,
 
     if(!SCWorld)
         SCWorld = inWorld;
-    if(!SCInterfaceTable)
-        SCInterfaceTable = inFt;
+    if(!julia_alloc_pool)
+        julia_alloc_pool = julia_alloc_pool_;
+    if(!julia_alloc_funcs)
+        julia_alloc_funcs = julia_alloc_funcs_;
     if(!scsynthRunning)
         scsynthRunning = 1;
     if(!RT_memory_start)
@@ -108,21 +111,6 @@ JL_DLLEXPORT void jl_init_with_image_SC(const char *julia_bindir,
     jl_exception_clear();
 }
 
-JL_DLLEXPORT void jl_check_SC_world_and_ft(World* inWorld, InterfaceTable* inFt)
-{
-    printf("Has Julia been booted in scsynth? %i\n", scsynthRunning);
-
-    if(SCWorld == inWorld)
-        printf("SAME WORLD\n");
-    else
-        printf("DIFFERENT WORLD\n");
-
-    if(SCInterfaceTable == inFt)
-        printf("SAME INTERFACE TABLE\n");
-    else
-        printf("DIFFERENT INTERFACE TABLE\n");
-}
-
 JL_DLLEXPORT void* jl_get_SCWorld()
 {
     if(!scsynthRunning)
@@ -135,7 +123,7 @@ JL_DLLEXPORT void* jl_get_SCWorld()
 JL_DLLEXPORT void* jl_rtalloc_sc(size_t inSize)
 {
     //printf("*** __Data__: CALLING INTO RTALLOC ***\n");
-    void* mem = SC_RTMalloc(SCWorld, inSize);
+    void* mem = SC_RTMalloc(julia_alloc_pool, inSize);
     
     //Zero the data
     if(mem)
@@ -147,7 +135,7 @@ JL_DLLEXPORT void* jl_rtalloc_sc(size_t inSize)
 JL_DLLEXPORT void jl_rtfree_sc(void* inPtr)
 {
     //printf("*** __Data__: CALLING INTO RTFREE ***\n");
-    SC_RTFree(SCWorld, inPtr);
+    SC_RTFree(julia_alloc_pool, inPtr);
 }
 
 /*********************************************************************/

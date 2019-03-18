@@ -2,9 +2,6 @@
 #include <cstdio>
 #include <exception>
 
-//For jl_nothing
-//#include <julia.h>
-
 extern "C" 
 {
 	/* INIT GLOBAL VARIABLES */
@@ -12,26 +9,26 @@ extern "C"
 	World* SCWorld = NULL;
 	InterfaceTable* SCInterfaceTable = NULL;
 
+	void* RT_memory_start = NULL;
+	size_t RT_memory_size = 0;
+	uintptr_t RT_memory_start_uint = 0;
+	uintptr_t RT_memory_size_uint = 0;
+
 	/* RTALLOC WRAPPER FUNCTIONS */
 	void* SC_RTMalloc(World* inWorld, size_t inSize)
 	{
 		if(scsynthRunning)
 		{
-			void* alloc_memory = NULL;
+			void* alloc_memory;
 			try
 			{
 				alloc_memory = RTAlloc(inWorld, inSize);
 			}
-			catch (...) //If RTAlloc gives exception, go here. Reassign null and return it
+			catch (...) //RT memory exception. Return normal malloc(). It will be dealt with in SC_RTFree()
 			{
-				printf("WARNING: Julia could not allocate memory. Run the GC. \n");
+				printf("WARNING: Julia could not allocate RT memory. Using normal allocator. Run the GC. \n");
 
-				/* PERHAPS HERE I NEED TO RETURN A ptr to jl_nothing, as it is the void* counterpart of Julia
-				Julia would know how to treat the value, if it is used in functions. Consider:
-				a = zeros(10000) -> memory error
-				println(a) -> wouldn't know how to print a NULL, but it would for a jl_nothing */
-				alloc_memory = NULL;
-				//alloc_memory = (void*)jl_nothing;
+				alloc_memory = malloc(inSize);
 			}
 
 			return alloc_memory;
@@ -40,25 +37,63 @@ extern "C"
 			return malloc(inSize);
 	}
 
+	/* Previous area might have been allocated with RTAlloc, so results would be undefined for normal realloc.
+	There is the need to RTFree previous memory and allocate new one. */
+	void* manual_realloc(World* inWorld, void* inPtr, size_t inSize)
+	{
+		uintptr_t inPtr_uint = (uintptr_t)inPtr;
+
+		/* If memory has been RT allocated, it is between the RT pointer beginning block and its end.
+		This also means that the memory has been normally allocated with malloc/calloc/realloc when there was 
+		no RT memory to alloc to. */
+		bool is_memory_RT = (inPtr_uint >= RT_memory_start_uint && inPtr_uint < (RT_memory_start_uint + RT_memory_size_uint));
+
+		//if it was normal malloced memory, just realloc it
+		if(!is_memory_RT)
+			return realloc(inPtr, inSize);
+		
+		/* OTHERWISE IT'S RT MEMORY */
+		
+		//if size is 0, RTFree the memory and return NULL
+		if(inSize == 0)
+		{
+			RTFree(inWorld, inPtr);
+			return NULL;
+		}
+
+		//Allocate new chunk
+		void* mem = malloc(inSize);
+
+		//If previous pointer was invalid, just return the new malloced ptr
+		if(!inPtr)
+			return mem;
+
+		/* This is not how realloc() works, as it internally it knows the previous size of malloc to just copy
+		that chunk of memory to the new one. But since realloc()'s extra memory is undefined anyway, I might just copy
+		junk memory past the previous memory, and let Julia initialize it as it would do with a normal realloc() call */
+		memcpy(mem, inPtr, inSize);
+
+		//Free old pointer
+		RTFree(inWorld, inPtr);
+		
+		//Return new allocated memory.
+		return mem;
+	}
+
 	void* SC_RTRealloc(World* inWorld, void *inPtr, size_t inSize)
 	{
 		if(scsynthRunning)
 		{
-			void* alloc_memory = NULL;
+			void* alloc_memory;
 			try
 			{
 				alloc_memory = RTRealloc(inWorld, inPtr, inSize);
 			}
-			catch (...) //If RTAlloc gives exception, go here. Reassign null and return it
+			catch (...) //RT memory exception. Return normal realloc(). It will be dealt with in SC_RTFree()
 			{
-				printf("WARNING: Julia could not allocate memory. Run the GC. \n");
+				printf("WARNING: Julia could not allocate RT memory. Using normal allocator. Run the GC. \n");
 
-				/* PERHAPS HERE I NEED TO RETURN A ptr to jl_nothing, as it is the void* counterpart of Julia
-				Julia would know how to treat the value, if it is used in functions. Consider:
-				a = zeros(10000) -> memory error
-				println(a) -> wouldn't know how to print a NULL, but it would for a jl_nothing */
-				alloc_memory = NULL;
-				//alloc_memory = (void*)jl_nothing;
+				alloc_memory = manual_realloc(inWorld, inPtr, inSize);
 			}
 
 			return alloc_memory;
@@ -71,8 +106,20 @@ extern "C"
 	{
 		if(!inPtr)
 			return;
-			
-		if(scsynthRunning)
+
+		uintptr_t inPtr_uint = (uintptr_t)inPtr;
+
+		/* If memory has been RT allocated, it is between the RT pointer beginning block and its end.
+		This also means that the memory has been normally allocated with malloc/calloc/realloc when there was 
+		no RT memory to alloc to. */
+		bool is_memory_RT = (inPtr_uint >= RT_memory_start_uint && inPtr_uint < (RT_memory_start_uint + RT_memory_size_uint));
+
+		/* printf("*** Is memory RT? %d\n", is_memory_RT);
+		printf("inPtr: %zu\n", inPtr_uint);
+		printf("RT_memory_start: %zu\n", RT_memory_start_uint);
+		printf("RT_memory_siz: %zu\n", RT_memory_size_uint); */
+
+		if(scsynthRunning && is_memory_RT)
 			RTFree(inWorld, inPtr);
 		else
 			free(inPtr);
@@ -80,23 +127,18 @@ extern "C"
 
 	void* RTCalloc(World* inWorld, size_t nitems, size_t inSize)
 	{
-		void* alloc_memory = NULL;
+		void* alloc_memory;
 		try
 		{
 			size_t length = inSize * nitems;
 			alloc_memory = RTAlloc(inWorld, length);
 			memset(alloc_memory, 0, length);
 		}
-		catch (...) //If RTAlloc gives exception, go here. Reassign null and return it
+		catch (...) //RT memory exception. Return normal calloc(). It will be dealt with in SC_RTFree()
 		{
-			printf("WARNING: Julia could not allocate memory. Run the GC. \n");
+			printf("WARNING: Julia could not allocate RT memory. Using normal allocator. Run the GC. \n");
 
-			/* PERHAPS HERE I NEED TO RETURN A ptr to jl_nothing, as it is the void* counterpart of Julia
-				Julia would know how to treat the value, if it is used in functions. Consider:
-				a = zeros(10000) -> memory error
-				println(a) -> wouldn't know how to print a NULL, but it would for a jl_nothing */
-			alloc_memory = NULL;
-			//alloc_memory = (void*)jl_nothing;
+			alloc_memory = calloc(nitems, inSize);
 		}
 
 		return alloc_memory; 
@@ -133,16 +175,11 @@ extern "C"
 			{
 				mem = (unsigned char*)RTAlloc(inWorld, len);
 			}
-			catch (...)
+			catch (...) //RT memory exception. Return normal malloc(). It will be dealt with in SC_RTFree()
 			{
-				printf("WARNING: Julia could not allocate memory. Run the GC. \n");
+				printf("WARNING: Julia could not allocate RT memory. Using normal allocator. Run the GC. \n");
 
-				/* PERHAPS HERE I NEED TO RETURN A ptr to jl_nothing, as it is the void* counterpart of Julia
-				Julia would know how to treat the value, if it is used in functions. Consider:
-				a = zeros(10000) -> memory error
-				println(a) -> wouldn't know how to print a NULL, but it would for a jl_nothing */
-				mem = NULL;
-				//mem = (void*)jl_nothing;
+				mem = (unsigned char*)malloc(len);
 			}
 			if (!mem)
 				return ENOMEM;
@@ -155,16 +192,11 @@ extern "C"
 		{
 			mem = (unsigned char*)RTAlloc(inWorld, len + align-1);
 		}
-		catch (...)
+		catch (...) //RT memory exception. Return normal malloc(). It will be dealt with in SC_RTFree()
 		{
-			printf("WARNING: Julia could not allocate memory. Run the GC. \n");
+			printf("WARNING: Julia could not allocate RT memory. Using normal allocator. Run the GC. \n");
 
-			/* PERHAPS HERE I NEED TO RETURN A ptr to jl_nothing, as it is the void* counterpart of Julia
-				Julia would know how to treat the value, if it is used in functions. Consider:
-				a = zeros(10000) -> memory error
-				println(a) -> wouldn't know how to print a NULL, but it would for a jl_nothing */
-			mem = NULL;
-			//mem = (void*)jl_nothing;
+			mem = (unsigned char*)malloc(len + align-1);
 		}
 		if (!mem)
 			return ENOMEM;
@@ -188,7 +220,7 @@ extern "C"
 		((size_t *)end)[-2] = footer&7 | end-newAlloc;
 
 		if (newAlloc != mem) 
-			RTFree(inWorld, mem);
+			SC_RTFree(inWorld, mem);
 
 		*res = newAlloc;
 		return 0;

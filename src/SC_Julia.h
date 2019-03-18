@@ -194,6 +194,12 @@ extern World* SCWorld;
 extern InterfaceTable* SCInterfaceTable;
 extern int scsynthRunning;
 
+/* RT ALLOCATOR INFORMATIONS */
+extern void* RT_memory_start;
+extern size_t RT_memory_size;
+extern uintptr_t RT_memory_start_uint;
+extern uintptr_t RT_memory_size_uint;
+
 #ifdef __cplusplus
 }
 #endif

@@ -65,7 +65,9 @@ JL_DLLEXPORT void jl_init_with_image(const char *julia_bindir,
 JL_DLLEXPORT void jl_init_with_image_SC(const char *julia_bindir,
                                      const char *image_relative_path,
                                      World* inWorld,
-                                     InterfaceTable* inFt)
+                                     InterfaceTable* inFt,
+                                     void* RT_memory_start_,
+                                     size_t RT_memory_size_)
 {
     if (jl_is_initialized())
         return;
@@ -84,6 +86,17 @@ JL_DLLEXPORT void jl_init_with_image_SC(const char *julia_bindir,
         SCInterfaceTable = inFt;
     if(!scsynthRunning)
         scsynthRunning = 1;
+    if(!RT_memory_start)
+    {
+        RT_memory_start = RT_memory_start_;
+        RT_memory_size = RT_memory_size_;
+        
+        RT_memory_start_uint = (uintptr_t)RT_memory_start;
+        RT_memory_size_uint = (uintptr_t)RT_memory_size;
+        
+        printf("MEMORY START %zu\n", (uintptr_t)RT_memory_start);
+        printf("MEMORY SIZE %zu\n", RT_memory_size);
+    }
     
     libsupport_init();
     jl_options.julia_bindir = julia_bindir;
@@ -121,7 +134,7 @@ JL_DLLEXPORT void* jl_get_SCWorld()
 /* __Data__ */
 JL_DLLEXPORT void* jl_rtalloc_sc(size_t inSize)
 {
-    printf("*** __Data__: CALLING INTO RTALLOC ***\n");
+    //printf("*** __Data__: CALLING INTO RTALLOC ***\n");
     void* mem = SC_RTMalloc(SCWorld, inSize);
     
     //Zero the data
@@ -133,7 +146,7 @@ JL_DLLEXPORT void* jl_rtalloc_sc(size_t inSize)
 
 JL_DLLEXPORT void jl_rtfree_sc(void* inPtr)
 {
-    printf("*** __Data__: CALLING INTO RTFREE ***\n");
+    //printf("*** __Data__: CALLING INTO RTFREE ***\n");
     SC_RTFree(SCWorld, inPtr);
 }
 

@@ -2362,7 +2362,7 @@ JL_DLLEXPORT jl_method_instance_t *jl_lookup_generic_and_compile_SC(jl_value_t *
 
     JL_TRY {
         /* Should I, perhaps, only let the include() function to update world_age? */
-        jl_get_ptls_states()->world_age = jl_get_world_counter();
+        //jl_get_ptls_states()->world_age = jl_get_world_counter();
 
         if(!args[0])
             jl_error("Could not retrieve method instance");
@@ -2436,7 +2436,7 @@ JL_DLLEXPORT jl_value_t* jl_lookup_generic_and_compile_return_value_SC(jl_value_
 
     JL_TRY {
         /* Should I, perhaps, only let the include() function to update world_age? */
-        jl_get_ptls_states()->world_age = jl_get_world_counter();
+        //jl_get_ptls_states()->world_age = jl_get_world_counter();
 
         if(!args[0])
             jl_error("Could not retrieve method instance");

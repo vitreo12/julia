@@ -7,26 +7,32 @@ module SCUtilities
     #================================================#
     #================================================#
 
-    #Given a var_type::DataType, recursively find if it contains any data_type_to_find::DataType or data_type_to_find::UnionAll (for parametric types)
-    function __find_data_type__(data_type_to_find::T, var_name::Symbol, var_type::TV) where {T <: Union{UnionAll, DataType}, TV <: Union{UnionAll, DataType}}
-        
-        final_array_symbols::Vector{Symbol} = Vector{Symbol}()
-        
-        found_at_least_one::Bool = false
+    #================================================#
+    #================================================#
+    #= ALSO, IT ALLOCATES A LOT OF MEMORY!!!!!!!... =# 
+    #================================================#
+    #================================================#
 
-        function __find_field_recursive__(var_type::T, recursive_string::String) where T <: Union{UnionAll, DataType}
-            field_names = nothing
+    #Maybe get rid of this?
+    const UnionAllDataType = Union{UnionAll, DataType}
+    
+    #Given a var_type::DataType, recursively find if it contains any data_type_to_find::DataType or data_type_to_find::UnionAll (for parametric types)
+    function __find_data_type__(data_type_to_find::UnionAllDataType, var_name::Symbol, var_type::UnionAllDataType)
+
+        final_array_symbols::Vector{Symbol} = Vector{Symbol}()
+
+        function __find_field_recursive__(var_type::UnionAllDataType, recursive_string::String)
             count::Int32 = 1
-            
-            #Can I get rid of this try/catch here????
-            #Some DataTypes have no set fieldnames (like, Signed)
-            try
-                field_names = fieldnames(var_type)
-            catch
-                field_names = nothing
+
+            #Abstract types don't have fieldnames
+            if(isabstracttype(var_type) || Base.argument_datatype(var_type) === nothing)
+                return
             end
             
-            #IS try/catch block safer here???? Instead of if/else
+            #Field names for this DataType/UnionAll
+            field_names::Tuple = fieldnames(var_type)
+            
+            #DataType
             if(isa(var_type, DataType))
                 for this_type = var_type.types
                     #String path for this inner iteration
@@ -68,10 +74,6 @@ module SCUtilities
                     __find_field_recursive__(this_type, inner_string)
                 end
             end
-
-            #println(final_array_symbols)
-            #Not found. Reset String
-            #final_array_symbols = String(var_name)
         end
 
         __find_field_recursive__(var_type, String(var_name))

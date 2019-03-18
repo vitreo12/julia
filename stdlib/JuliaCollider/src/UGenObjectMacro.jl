@@ -127,6 +127,12 @@ macro object(name, body)
                 #= IT WORKS, BUT IT SLOWS THINGS QUITE A BIT... =# 
                 #================================================#
                 #================================================#
+
+                #================================================#
+                #================================================#
+                #= ALSO, IT ALLOCATES A LOT OF MEMORY!!!!!!!... =# 
+                #================================================#
+                #================================================#
                 
                 #Recursively find Buffer for this var_name/var_type. It expects that the full
                 #var_type is defined, up until Buffer.
@@ -172,6 +178,12 @@ macro object(name, body)
                 #================================================#
                 #================================================#
                 #= IT WORKS, BUT IT SLOWS THINGS QUITE A BIT... =# 
+                #================================================#
+                #================================================#
+
+                #================================================#
+                #================================================#
+                #= ALSO, IT ALLOCATES A LOT OF MEMORY!!!!!!!... =# 
                 #================================================#
                 #================================================#
                 
@@ -263,8 +275,8 @@ macro object(name, body)
             #using Main.JuliaCollider.UGenMacros
 
             #SCUtilities
-            using JuliaCollider.SCUtilities
-            #using Main.JuliaCollider.SCUtilities
+            #import JuliaCollider.SCUtilities.__find_data_type__
+            using Main.JuliaCollider.SCUtilities
             
             #__SCSynth__
             import JuliaCollider.SCSynth.__SCSynth__

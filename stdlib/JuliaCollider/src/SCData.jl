@@ -1,37 +1,50 @@
 #= Module for memory allocation using SC's RTAlloc/RTFree callbacks =#
-module SCData
+    module SCData
 
     export Data, __DataFree__, nchans
 
     #Have specialized Data for Float32, Float64 ???
 
-    #Mutable struct because finalizers only work on mutable structs
-    mutable struct Data{T, N}
+    #It needs to be mutable to set data.ptr = C_NULL.
+    #I could actually maybe remove that line if no finalizers are ran anyway...
+    struct Data{T, N}
         ptr::Ptr{T}
         vec::Array{T, N}
         length::Signed
         num_chans::Signed
     end
 
-    #RTFree()
+    #RTFree() called in destructor.
+    #I could have a global id dict with Data objects that might need to be freed, instead
+    #of using finalizers...
     function __DataFree__(data::Data) 
-        #If valid memory (hasn't been finalized yet)
+        #If valid memory
         if(data.ptr != C_NULL)
+            println("*** RTFree data ***")
+            
             #RTFree call
             ccall(:jl_rtfree_sc, Cvoid, (Ptr{Cvoid},), data.ptr)
             
             #data.ptr would now be pointing at a wrong memory location, since it's been freed. 
             #Set ptr to NULL
-            data.ptr = C_NULL
+            #data.ptr = C_NULL
         end
     end
 
+    #= 
+    The code for finalizers could be lead to errors:
+        size_t last_age = jl_get_ptls_states()->world_age;
+        jl_get_ptls_states()->world_age = jl_world_counter;
+        jl_apply(args, 2);
+        jl_get_ptls_states()->world_age = last_age;
+    =#
+
     #In case a Data won't be picked by the recursive __find_data_type__, add a finalizer to be executed at next GC
-    function __DataFinalizer__(data::Data)
+    #= function __DataFinalizer__(data::Data)
         println("*** FINALIZING data ***")
         
         __DataFree__(data)
-    end
+    end =#
 
     function Data(type::DataType, length::Signed, num_chans::Signed = 1)
         if(type.mutable)
@@ -69,7 +82,7 @@ module SCData
             data_1d::Data{type, 1} = Data{type, 1}(ptr, vec_1d, length, num_chans)
 
             #Register finalizer
-            finalizer(__DataFinalizer__, data_1d)
+            #finalizer(__DataFinalizer__, data_1d)
 
             return data_1d
         else
@@ -80,7 +93,7 @@ module SCData
             data_2d::Data{type, 2} = Data{type, 2}(ptr, vec_2d, length, num_chans)
 
             #Register finalizer
-            finalizer(__DataFinalizer__, data_2d)
+            #finalizer(__DataFinalizer__, data_2d)
 
             return data_2d
         end
@@ -130,7 +143,7 @@ module SCData
 
     #2d == length * nchans
     function size(data::Data{T, 2}) where T
-        return data.length * nchans
+        return data.length * data.num_chans
     end
 
     #macro data() end

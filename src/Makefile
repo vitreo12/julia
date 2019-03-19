@@ -7,7 +7,7 @@ include $(JULIAHOME)/deps/llvm-ver.make
 
 override CFLAGS += $(JCFLAGS)
 override CXXFLAGS += $(JCXXFLAGS)
-override CPPFLAGS += $(JCPPFLAGS) -fexceptions #enable exceptions for SC RTAllocs
+override CPPFLAGS += $(JCPPFLAGS)
 
 # -I BUILDDIR comes before -I SRCDIR so that the user can override <options.h> on a per-build-directory basis
 #  for gcc/clang, suggested content is:

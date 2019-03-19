@@ -73,13 +73,11 @@ JL_DLLEXPORT void jl_init_with_image_SC(const char *julia_bindir,
     if (jl_is_initialized())
         return;
     
-    if(!inWorld || !julia_alloc_pool_)
+    if(!inWorld)
     {
-        printf("ERROR: Invalid World* and InterfaceTable*: Julia won't boot \n");   
+        printf("ERROR: Invalid World*: Julia won't boot \n");   
         return;
     }
-
-    printf("*** Init Julia with Supercollider's World and InterfaceTable pointers ***\n");
 
     if(!SCWorld)
         SCWorld = inWorld;

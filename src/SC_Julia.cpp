@@ -20,13 +20,10 @@ extern "C"
 	{
 		if(scsynthRunning)
 		{
-			void* alloc_memory;
-			try
-			{
-				//printf("ALLOCPOOL: %zu\n", (uintptr_t)julia_alloc_pool);
-				alloc_memory = RTAlloc(julia_alloc_pool, inSize);
-			}
-			catch (...) //RT memory exception. Return normal malloc(). It will be dealt with in SC_RTFree()
+			void* alloc_memory = RTAlloc(julia_alloc_pool, inSize);
+			
+			//AllocPoolSafe will return NULL if it can't allocate RT memory.
+			if(!alloc_memory)
 			{
 				printf("WARNING: Julia could not allocate RT memory. Using normal allocator. Run the GC. \n");
 
@@ -86,12 +83,10 @@ extern "C"
 	{
 		if(scsynthRunning)
 		{
-			void* alloc_memory;
-			try
-			{
-				alloc_memory = RTRealloc(julia_alloc_pool, inPtr, inSize);
-			}
-			catch (...) //RT memory exception. Return normal realloc(). It will be dealt with in SC_RTFree()
+			void* alloc_memory = RTRealloc(julia_alloc_pool, inPtr, inSize);
+
+			//AllocPoolSafe will return NULL if it can't allocate RT memory.
+			if(!alloc_memory)
 			{
 				printf("WARNING: Julia could not allocate RT memory. Using normal allocator. Run the GC. \n");
 
@@ -116,10 +111,10 @@ extern "C"
 		no RT memory to alloc to. */
 		bool is_memory_RT = (inPtr_uint >= RT_memory_start_uint && inPtr_uint < (RT_memory_start_uint + RT_memory_size_uint));
 
-		/* printf("*** Is memory RT? %d\n", is_memory_RT);
+		printf("*** Is memory RT? %d\n", is_memory_RT);
 		printf("inPtr: %zu\n", inPtr_uint);
 		printf("RT_memory_start: %zu\n", RT_memory_start_uint);
-		printf("RT_memory_siz: %zu\n", RT_memory_size_uint); */
+		printf("RT_memory_siz: %zu\n", RT_memory_size_uint);
 
 		if(scsynthRunning && is_memory_RT)
 			RTFree(julia_alloc_pool, inPtr);
@@ -129,19 +124,18 @@ extern "C"
 
 	void* RTCalloc(JuliaAllocPool* inPool, size_t nitems, size_t inSize)
 	{
-		void* alloc_memory;
-		try
-		{
-			size_t length = inSize * nitems;
-			alloc_memory = RTAlloc(julia_alloc_pool, length);
-			memset(alloc_memory, 0, length);
-		}
-		catch (...) //RT memory exception. Return normal calloc(). It will be dealt with in SC_RTFree()
+		size_t length = inSize * nitems;
+		void* alloc_memory = RTAlloc(julia_alloc_pool, length);
+
+		//AllocPoolSafe will return NULL if it can't allocate RT memory.
+		if(!alloc_memory)
 		{
 			printf("WARNING: Julia could not allocate RT memory. Using normal allocator. Run the GC. \n");
 
 			alloc_memory = calloc(nitems, inSize);
 		}
+
+		memset(alloc_memory, 0, length);
 
 		return alloc_memory; 
 	}
@@ -173,16 +167,17 @@ extern "C"
 
 		if (align <= SIZE_ALIGN) 
 		{
-			try
-			{
-				mem = (unsigned char*)RTAlloc(julia_alloc_pool, len);
-			}
-			catch (...) //RT memory exception. Return normal malloc(). It will be dealt with in SC_RTFree()
+			mem = (unsigned char*)RTAlloc(julia_alloc_pool, len);
+			
+			//AllocPoolSafe will return NULL if it can't allocate RT memory.
+			if(!mem)
 			{
 				printf("WARNING: Julia could not allocate RT memory. Using normal allocator. Run the GC. \n");
-
-				mem = (unsigned char*)malloc(len);
+				return posix_memalign(res, align, len);
 			}
+
+			/* RT MEMORY */
+			
 			if (!mem)
 				return ENOMEM;
 
@@ -190,16 +185,17 @@ extern "C"
 			return 0;
 		}
 		
-		try
-		{
-			mem = (unsigned char*)RTAlloc(julia_alloc_pool, len + align-1);
-		}
-		catch (...) //RT memory exception. Return normal malloc(). It will be dealt with in SC_RTFree()
+		mem = (unsigned char*)RTAlloc(julia_alloc_pool, len + align-1);
+		
+		//AllocPoolSafe will return NULL if it can't allocate RT memory.
+		if(!mem)
 		{
 			printf("WARNING: Julia could not allocate RT memory. Using normal allocator. Run the GC. \n");
-
-			mem = (unsigned char*)malloc(len + align-1);
+			return posix_memalign(res, align, len);
 		}
+
+		/* RT MEMORY */
+		
 		if (!mem)
 			return ENOMEM;
 

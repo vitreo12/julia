@@ -7,7 +7,7 @@
 */
 #include "platform.h"
 
-//SC STUFF
+/* JULIACOLLIDER */
 #include "SC_Julia.h"
 
 #include <stdlib.h>
@@ -64,36 +64,36 @@ JL_DLLEXPORT void jl_init_with_image(const char *julia_bindir,
 /*********************************************************************/
 JL_DLLEXPORT void jl_init_with_image_SC(const char *julia_bindir,
                                      const char *image_relative_path,
-                                     World* inWorld,
-                                     JuliaAllocPool* julia_alloc_pool_,
-                                     JuliaAllocFuncs* julia_alloc_funcs_,
-                                     void* RT_memory_start_,
-                                     size_t RT_memory_size_)
+                                     World* in_world,
+                                     JuliaAllocPool* in_sc_julia_alloc_pool,
+                                     JuliaAllocFuncs* in_sc_julia_alloc_funcs,
+                                     void* in_RT_memory_start,
+                                     size_t in_RT_memory_size)
 {
     if (jl_is_initialized())
         return;
     
-    if(!inWorld)
+    if(!in_world)
     {
         printf("ERROR: Invalid World*: Julia won't boot \n");   
         return;
     }
 
     if(!SCWorld)
-        SCWorld = inWorld;
-    if(!julia_alloc_pool)
-        julia_alloc_pool = julia_alloc_pool_;
-    if(!julia_alloc_funcs)
-        julia_alloc_funcs = julia_alloc_funcs_;
+        SCWorld = in_world;
+    if(!sc_julia_alloc_pool)
+        sc_julia_alloc_pool = in_sc_julia_alloc_pool;
+    if(!sc_julia_alloc_funcs)
+        sc_julia_alloc_funcs = in_sc_julia_alloc_funcs;
     if(!scsynthRunning)
         scsynthRunning = 1;
     if(!RT_memory_start)
     {
-        RT_memory_start = RT_memory_start_;
-        RT_memory_size = RT_memory_size_;
+        RT_memory_start = in_RT_memory_start;
+        RT_memory_size = in_RT_memory_size;
         
-        RT_memory_start_uint = (uintptr_t)RT_memory_start;
-        RT_memory_size_uint = (uintptr_t)RT_memory_size;
+        RT_memory_start_uintptr = (uintptr_t)RT_memory_start;
+        RT_memory_size_uintptr = (uintptr_t)RT_memory_size;
         
         printf("MEMORY START %zu\n", (uintptr_t)RT_memory_start);
         printf("MEMORY SIZE %zu\n", RT_memory_size);
@@ -121,7 +121,7 @@ JL_DLLEXPORT void* jl_get_SCWorld()
 JL_DLLEXPORT void* jl_rtalloc_sc(size_t inSize)
 {
     //printf("*** __Data__: CALLING INTO RTALLOC ***\n");
-    void* mem = SC_RTMalloc(julia_alloc_pool, inSize);
+    void* mem = SC_RTMalloc(sc_julia_alloc_pool, inSize);
     
     //Zero the data
     if(mem)
@@ -133,7 +133,7 @@ JL_DLLEXPORT void* jl_rtalloc_sc(size_t inSize)
 JL_DLLEXPORT void jl_rtfree_sc(void* inPtr)
 {
     //printf("*** __Data__: CALLING INTO RTFREE ***\n");
-    SC_RTFree(julia_alloc_pool, inPtr);
+    SC_RTFree(sc_julia_alloc_pool, inPtr);
 }
 
 /*********************************************************************/

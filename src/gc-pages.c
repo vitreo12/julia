@@ -5,6 +5,8 @@
 #  include <sys/resource.h>
 #endif
 
+/* JULIACOLLIDER */
+#include "SC_Julia.h"
 #include "SC_AllocMacros.h"
 
 #ifdef __cplusplus

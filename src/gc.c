@@ -4,7 +4,8 @@
 #include "julia_gcext.h"
 #include "julia_assert.h"
 
-//Macros as last include to #define all the malloc, realloc, calloc and free calls in gc.c
+/* JULIACOLLIDER */
+#include "SC_Julia.h"
 #include "SC_AllocMacros.h"
 
 #ifdef __cplusplus

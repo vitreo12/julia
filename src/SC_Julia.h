@@ -20,12 +20,7 @@ extern "C" {
 
 typedef struct World World;
 
-typedef struct AllocPool AllocPool;
-
-typedef struct JuliaAllocPool
-{
-	AllocPool* alloc_pool;
-} JuliaAllocPool;
+typedef struct JuliaAllocPool JuliaAllocPool;
 
 typedef struct JuliaAllocFuncs
 {
@@ -35,24 +30,23 @@ typedef struct JuliaAllocFuncs
 	size_t(*fRTTotalFreeMemory)(JuliaAllocPool* inPool);
 } JuliaAllocFuncs;
 
-
 /* GLOBAL VARIABLES */
 extern World* SCWorld;
-extern JuliaAllocPool* julia_alloc_pool;
-extern JuliaAllocFuncs* julia_alloc_funcs;
+extern JuliaAllocPool* sc_julia_alloc_pool;
+extern JuliaAllocFuncs* sc_julia_alloc_funcs;
 extern int scsynthRunning;
 
 /* RT ALLOCATOR INFORMATIONS */
 extern void* RT_memory_start;
 extern size_t RT_memory_size;
-extern uintptr_t RT_memory_start_uint;
-extern uintptr_t RT_memory_size_uint;
+extern uintptr_t RT_memory_start_uintptr;
+extern uintptr_t RT_memory_size_uintptr;
 
 /* FUNCTIONS */
-#define RTAlloc (*julia_alloc_funcs->fRTAlloc)
-#define RTRealloc (*julia_alloc_funcs->fRTRealloc)
-#define RTFree (*julia_alloc_funcs->fRTFree)
-#define RTTotalFreeMemory (*julia_alloc_funcs->fRTTotalFreeMemory)
+#define RTAlloc (*sc_julia_alloc_funcs->fRTAlloc)
+#define RTRealloc (*sc_julia_alloc_funcs->fRTRealloc)
+#define RTFree (*sc_julia_alloc_funcs->fRTFree)
+#define RTTotalFreeMemory (*sc_julia_alloc_funcs->fRTTotalFreeMemory)
 extern void* RTCalloc(JuliaAllocPool* inPool, size_t nitems, size_t inSize);
 
 extern void* SC_RTMalloc(JuliaAllocPool* inPool, size_t inSize);

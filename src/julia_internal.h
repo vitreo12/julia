@@ -3,12 +3,15 @@
 #ifndef JL_INTERNAL_H
 #define JL_INTERNAL_H
 
-#include "SC_Julia.h"
 #include "options.h"
 #include <uv.h>
 #if !defined(_MSC_VER) && !defined(__MINGW32__)
 #include <unistd.h>
 #include <sched.h>
+
+/* JULIACOLLIDER */
+#include "SC_Julia.h"
+
 #else
 #define sleep(x) Sleep(1000*x)
 #endif
@@ -867,10 +870,10 @@ STATIC_INLINE void *jl_malloc_aligned(size_t sz, size_t align)
 {
 #if defined(_P64) || defined(__APPLE__)
     if (align <= 16)
-        return SC_RTMalloc(julia_alloc_pool, sz);
+        return SC_RTMalloc(sc_julia_alloc_pool, sz);
 #endif
     void *ptr;
-    if (SC_RTPosix_memalign(julia_alloc_pool, &ptr, align, sz))
+    if (SC_RTPosix_memalign(sc_julia_alloc_pool, &ptr, align, sz))
         return NULL;
     return ptr;
 }
@@ -879,19 +882,19 @@ STATIC_INLINE void *jl_realloc_aligned(void *d, size_t sz, size_t oldsz, size_t 
 {
 #if defined(_P64) || defined(__APPLE__)
     if (align <= 16)
-        return SC_RTRealloc(julia_alloc_pool, d, sz);
+        return SC_RTRealloc(sc_julia_alloc_pool, d, sz);
 #endif
     void *b = jl_malloc_aligned(sz, align);
     if (b != NULL) {
         memcpy(b, d, oldsz > sz ? sz : oldsz);
-        SC_RTFree(julia_alloc_pool, d);
+        SC_RTFree(sc_julia_alloc_pool, d);
     }
     return b;
 }
 
 STATIC_INLINE void jl_free_aligned(void *p) JL_NOTSAFEPOINT
 {
-    SC_RTFree(julia_alloc_pool, p);
+    SC_RTFree(sc_julia_alloc_pool, p);
 } 
 
 /* USED FOR threadgroups.c. Don't want them to be allocating in SC: */

@@ -1484,11 +1484,11 @@ JL_DLLEXPORT void jl_init_with_image(const char *julia_bindir,
 /* jlapi.c */
 JL_DLLEXPORT void jl_init_with_image_SC(const char *julia_bindir,
                                      const char *image_relative_path, 
-                                     struct World* inWorld,
-                                     struct JuliaAllocPool* julia_alloc_pool_,
-                                     struct JuliaAllocFuncs* julia_alloc_funcs_,
-                                     void* RT_memory_start_,
-                                     size_t RT_memory_size_);
+                                     struct World* in_world,
+                                     struct JuliaAllocPool* in_sc_julia_alloc_pool,
+                                     struct JuliaAllocFuncs* in_sc_julia_alloc_funcs,
+                                     void* in_RT_memory_start,
+                                     size_t in_RT_memory_size);
 
 JL_DLLEXPORT void* jl_get_SCWorld();
 

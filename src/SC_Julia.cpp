@@ -7,20 +7,23 @@ extern "C"
 	/* INIT GLOBAL VARIABLES */
 	int scsynthRunning = 0;
 	World* SCWorld = NULL;
-	JuliaAllocPool* julia_alloc_pool = NULL;
-	JuliaAllocFuncs* julia_alloc_funcs = NULL;
+	JuliaAllocPool* sc_julia_alloc_pool = NULL;
+	JuliaAllocFuncs* sc_julia_alloc_funcs = NULL;
 
 	void* RT_memory_start = NULL;
 	size_t RT_memory_size = 0;
-	uintptr_t RT_memory_start_uint = 0;
-	uintptr_t RT_memory_size_uint = 0;
+	uintptr_t RT_memory_start_uintptr = 0;
+	uintptr_t RT_memory_size_uintptr = 0;
 
 	/* RTALLOC WRAPPER FUNCTIONS */
 	void* SC_RTMalloc(JuliaAllocPool* inPool, size_t inSize)
 	{
 		if(scsynthRunning)
 		{
-			void* alloc_memory = RTAlloc(julia_alloc_pool, inSize);
+			if(inPool != sc_julia_alloc_pool)
+				printf("WARNING: Different pools???\n");
+			
+			void* alloc_memory = RTAlloc(sc_julia_alloc_pool, inSize);
 			
 			//AllocPoolSafe will return NULL if it can't allocate RT memory.
 			if(!alloc_memory)
@@ -40,12 +43,12 @@ extern "C"
 	There is the need to RTFree previous memory and allocate new one. */
 	void* manual_realloc(JuliaAllocPool* inPool, void* inPtr, size_t inSize)
 	{
-		uintptr_t inPtr_uint = (uintptr_t)inPtr;
+		uintptr_t inPtr_uintptr = (uintptr_t)inPtr;
 
 		/* If memory has been RT allocated, it is between the RT pointer beginning block and its end.
 		This also means that the memory has been normally allocated with malloc/calloc/realloc when there was 
 		no RT memory to alloc to. */
-		bool is_memory_RT = (inPtr_uint >= RT_memory_start_uint && inPtr_uint < (RT_memory_start_uint + RT_memory_size_uint));
+		bool is_memory_RT = (inPtr_uintptr >= RT_memory_start_uintptr && inPtr_uintptr < (RT_memory_start_uintptr + RT_memory_size_uintptr));
 
 		//if it was normal malloced memory, just realloc it
 		if(!is_memory_RT)
@@ -56,7 +59,7 @@ extern "C"
 		//if size is 0, RTFree the memory and return NULL
 		if(inSize == 0)
 		{
-			RTFree(julia_alloc_pool, inPtr);
+			RTFree(sc_julia_alloc_pool, inPtr);
 			return NULL;
 		}
 
@@ -73,7 +76,7 @@ extern "C"
 		memcpy(mem, inPtr, inSize);
 
 		//Free old pointer
-		RTFree(julia_alloc_pool, inPtr);
+		RTFree(sc_julia_alloc_pool, inPtr);
 		
 		//Return new allocated memory.
 		return mem;
@@ -83,14 +86,14 @@ extern "C"
 	{
 		if(scsynthRunning)
 		{
-			void* alloc_memory = RTRealloc(julia_alloc_pool, inPtr, inSize);
+			void* alloc_memory = RTRealloc(sc_julia_alloc_pool, inPtr, inSize);
 
 			//AllocPoolSafe will return NULL if it can't allocate RT memory.
 			if(!alloc_memory)
 			{
 				printf("WARNING: Julia could not allocate RT memory. Using normal allocator. Run the GC. \n");
 
-				alloc_memory = manual_realloc(julia_alloc_pool, inPtr, inSize);
+				alloc_memory = manual_realloc(sc_julia_alloc_pool, inPtr, inSize);
 			}
 
 			return alloc_memory;
@@ -104,20 +107,20 @@ extern "C"
 		if(!inPtr)
 			return;
 
-		uintptr_t inPtr_uint = (uintptr_t)inPtr;
+		uintptr_t inPtr_uintptr = (uintptr_t)inPtr;
 
 		/* If memory has been RT allocated, it is between the RT pointer beginning block and its end.
 		This also means that the memory has been normally allocated with malloc/calloc/realloc when there was 
 		no RT memory to alloc to. */
-		bool is_memory_RT = (inPtr_uint >= RT_memory_start_uint && inPtr_uint < (RT_memory_start_uint + RT_memory_size_uint));
+		bool is_memory_RT = (inPtr_uintptr >= RT_memory_start_uintptr && inPtr_uintptr < (RT_memory_start_uintptr + RT_memory_size_uintptr));
 
 		printf("*** Is memory RT? %d\n", is_memory_RT);
-		printf("inPtr: %zu\n", inPtr_uint);
-		printf("RT_memory_start: %zu\n", RT_memory_start_uint);
-		printf("RT_memory_siz: %zu\n", RT_memory_size_uint);
+		printf("inPtr: %zu\n", inPtr_uintptr);
+		printf("RT_memory_start: %zu\n", RT_memory_start_uintptr);
+		printf("RT_memory_siz: %zu\n", RT_memory_size_uintptr);
 
 		if(scsynthRunning && is_memory_RT)
-			RTFree(julia_alloc_pool, inPtr);
+			RTFree(sc_julia_alloc_pool, inPtr);
 		else
 			free(inPtr);
 	}
@@ -125,7 +128,7 @@ extern "C"
 	void* RTCalloc(JuliaAllocPool* inPool, size_t nitems, size_t inSize)
 	{
 		size_t length = inSize * nitems;
-		void* alloc_memory = RTAlloc(julia_alloc_pool, length);
+		void* alloc_memory = RTAlloc(sc_julia_alloc_pool, length);
 
 		//AllocPoolSafe will return NULL if it can't allocate RT memory.
 		if(!alloc_memory)
@@ -143,7 +146,7 @@ extern "C"
 	void* SC_RTCalloc(JuliaAllocPool* inPool, size_t nitems, size_t inSize)
 	{
 		if(scsynthRunning)
-			return RTCalloc(julia_alloc_pool, nitems, inSize);
+			return RTCalloc(sc_julia_alloc_pool, nitems, inSize);
 		else
 			return calloc(nitems, inSize);
 	}
@@ -167,7 +170,7 @@ extern "C"
 
 		if (align <= SIZE_ALIGN) 
 		{
-			mem = (unsigned char*)RTAlloc(julia_alloc_pool, len);
+			mem = (unsigned char*)RTAlloc(sc_julia_alloc_pool, len);
 			
 			//AllocPoolSafe will return NULL if it can't allocate RT memory.
 			if(!mem)
@@ -185,7 +188,7 @@ extern "C"
 			return 0;
 		}
 		
-		mem = (unsigned char*)RTAlloc(julia_alloc_pool, len + align-1);
+		mem = (unsigned char*)RTAlloc(sc_julia_alloc_pool, len + align-1);
 		
 		//AllocPoolSafe will return NULL if it can't allocate RT memory.
 		if(!mem)
@@ -218,7 +221,7 @@ extern "C"
 		((size_t *)end)[-2] = footer&7 | end-newAlloc;
 
 		if (newAlloc != mem) 
-			SC_RTFree(julia_alloc_pool, mem);
+			SC_RTFree(sc_julia_alloc_pool, mem);
 
 		*res = newAlloc;
 		return 0;

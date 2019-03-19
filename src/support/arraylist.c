@@ -9,6 +9,7 @@
 #include "dtypes.h"
 #include "arraylist.h"
 
+/* JULIACOLLIDER */
 #include "../SC_Julia.h"
 #include "../SC_AllocMacros.h"
 

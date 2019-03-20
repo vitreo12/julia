@@ -1,6 +1,5 @@
 #include "SC_Julia.h"
 #include <cstdio>
-#include <exception>
 
 extern "C" 
 {
@@ -21,9 +20,9 @@ extern "C"
 		if(scsynthRunning)
 		{
 			if(inPool != sc_julia_alloc_pool)
-				printf("WARNING: Different pools???\n");
+				printf("ERROR: Different pools \n");
 			
-			void* alloc_memory = RTAlloc(sc_julia_alloc_pool, inSize);
+			void* alloc_memory = RTAlloc(inPool, inSize);
 			
 			//AllocPoolSafe will return NULL if it can't allocate RT memory.
 			if(!alloc_memory)
@@ -59,7 +58,7 @@ extern "C"
 		//if size is 0, RTFree the memory and return NULL
 		if(inSize == 0)
 		{
-			RTFree(sc_julia_alloc_pool, inPtr);
+			RTFree(inPool, inPtr);
 			return NULL;
 		}
 
@@ -76,7 +75,7 @@ extern "C"
 		memcpy(mem, inPtr, inSize);
 
 		//Free old pointer
-		RTFree(sc_julia_alloc_pool, inPtr);
+		RTFree(inPool, inPtr);
 		
 		//Return new allocated memory.
 		return mem;
@@ -86,14 +85,17 @@ extern "C"
 	{
 		if(scsynthRunning)
 		{
-			void* alloc_memory = RTRealloc(sc_julia_alloc_pool, inPtr, inSize);
+			if(inPool != sc_julia_alloc_pool)
+				printf("ERROR: Different pools \n");
+
+			void* alloc_memory = RTRealloc(inPool, inPtr, inSize);
 
 			//AllocPoolSafe will return NULL if it can't allocate RT memory.
 			if(!alloc_memory)
 			{
 				printf("WARNING: Julia could not allocate RT memory. Using normal allocator. Run the GC. \n");
 
-				alloc_memory = manual_realloc(sc_julia_alloc_pool, inPtr, inSize);
+				alloc_memory = manual_realloc(inPool, inPtr, inSize);
 			}
 
 			return alloc_memory;
@@ -106,6 +108,9 @@ extern "C"
 	{
 		if(!inPtr)
 			return;
+		
+		if(inPool != sc_julia_alloc_pool)
+			printf("ERROR: Different pools \n");
 
 		uintptr_t inPtr_uintptr = (uintptr_t)inPtr;
 
@@ -114,21 +119,24 @@ extern "C"
 		no RT memory to alloc to. */
 		bool is_memory_RT = (inPtr_uintptr >= RT_memory_start_uintptr && inPtr_uintptr < (RT_memory_start_uintptr + RT_memory_size_uintptr));
 
-		printf("*** Is memory RT? %d\n", is_memory_RT);
+		/* printf("*** Is memory RT? %d\n", is_memory_RT);
 		printf("inPtr: %zu\n", inPtr_uintptr);
 		printf("RT_memory_start: %zu\n", RT_memory_start_uintptr);
-		printf("RT_memory_siz: %zu\n", RT_memory_size_uintptr);
+		printf("RT_memory_siz: %zu\n", RT_memory_size_uintptr); */
 
 		if(scsynthRunning && is_memory_RT)
-			RTFree(sc_julia_alloc_pool, inPtr);
+			RTFree(inPool, inPtr);
 		else
 			free(inPtr);
 	}
 
 	void* RTCalloc(JuliaAllocPool* inPool, size_t nitems, size_t inSize)
 	{
+		if(inPool != sc_julia_alloc_pool)
+			printf("ERROR: Different pools \n");
+				
 		size_t length = inSize * nitems;
-		void* alloc_memory = RTAlloc(sc_julia_alloc_pool, length);
+		void* alloc_memory = RTAlloc(inPool, length);
 
 		//AllocPoolSafe will return NULL if it can't allocate RT memory.
 		if(!alloc_memory)
@@ -146,7 +154,7 @@ extern "C"
 	void* SC_RTCalloc(JuliaAllocPool* inPool, size_t nitems, size_t inSize)
 	{
 		if(scsynthRunning)
-			return RTCalloc(sc_julia_alloc_pool, nitems, inSize);
+			return RTCalloc(inPool, nitems, inSize);
 		else
 			return calloc(nitems, inSize);
 	}
@@ -154,6 +162,9 @@ extern "C"
 	//ADD CREDITS: https://github.com/chneukirchen/musl-chris2/blob/master/src/malloc/posix_memalign.c
 	int RTPosix_memalign(JuliaAllocPool* inPool, void **res, size_t align, size_t len)
 	{
+		if(inPool != sc_julia_alloc_pool)
+			printf("ERROR: Different pools \n");
+
 		unsigned char *mem, *newAlloc, *end;
 		size_t header, footer;
 		
@@ -170,7 +181,7 @@ extern "C"
 
 		if (align <= SIZE_ALIGN) 
 		{
-			mem = (unsigned char*)RTAlloc(sc_julia_alloc_pool, len);
+			mem = (unsigned char*)RTAlloc(inPool, len);
 			
 			//AllocPoolSafe will return NULL if it can't allocate RT memory.
 			if(!mem)
@@ -188,7 +199,7 @@ extern "C"
 			return 0;
 		}
 		
-		mem = (unsigned char*)RTAlloc(sc_julia_alloc_pool, len + align-1);
+		mem = (unsigned char*)RTAlloc(inPool, len + align-1);
 		
 		//AllocPoolSafe will return NULL if it can't allocate RT memory.
 		if(!mem)
@@ -221,7 +232,7 @@ extern "C"
 		((size_t *)end)[-2] = footer&7 | end-newAlloc;
 
 		if (newAlloc != mem) 
-			SC_RTFree(sc_julia_alloc_pool, mem);
+			SC_RTFree(inPool, mem);
 
 		*res = newAlloc;
 		return 0;

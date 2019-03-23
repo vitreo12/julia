@@ -1,6 +1,6 @@
 module UGenMacros
 
-export @inputs, @outputs, @constructor, @new, @perform, @sample, @sample_index, @destructor, @unit, @in0, @in, @out, @sampleRate, @bufSize
+export @inputs, @outputs, @constructor, @new, @perform, @sample, @sampleIndex, @destructor, @unit, @in0, @in, @out, @sampleRate, @bufSize
 
 #All these macros need to be ran by an eval() call in the respective module
 macro inputs(num_of_inputs, tuple_input_names)
@@ -220,7 +220,7 @@ macro sample(arguments)
     return esc(:($sample_loop))
 end
 
-macro sample_index()
+macro sampleIndex()
     return esc(:(__sample_index__))
 end
 

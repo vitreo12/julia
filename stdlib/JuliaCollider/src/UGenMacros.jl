@@ -156,7 +156,7 @@ macro constructor(body)
     
     local constructor_definition = quote
         #Declare function that would return me the type of the variables in @new
-        function __get_args_with_types__()
+        function __get_args_with_types__(__ins__::Vector{Vector{Float32}}, __server__::__SCSynth__)
             $(variables_up_to_new...)
             $new_macro
         end
@@ -167,8 +167,20 @@ macro constructor(body)
         2) __constructor_body__ is defined in @__get_constructor_body__
         =#
 
+        function __eval_get_args_with_types__()
+            __fake_ins__::Vector{Vector{Float32}} = Vector{Vector{Float32}}(undef, __inputs__)
+            for i = 1 : __inputs__
+                __fake_ins__[i] = ones(1) #Single length vector. @constructor has access to only @in0 anyway
+            end
+
+            __fake_server__::__SCSynth__ = __SCSynth__(2.0, Int32(2))
+            
+            #Need to create dummy __ins__ and __server__ here so that parsing won't give errors.
+            return __get_args_with_types__(__fake_ins__, __fake_server__)
+        end
+
         #execute the function to get the types under the @constructor and @new scopes
-        __get_args_with_types__()
+        __eval_get_args_with_types__()
 
         #define __UGen__ struct
         eval(__define_struct__())

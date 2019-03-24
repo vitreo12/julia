@@ -80,7 +80,7 @@ macro object(name, body)
             #Return a constructor definition. When calling __constructor__(), a __UGen__() with valid fields would be returned.
             #__constructor_body__ is a global variable in the newly created @object module
             constructor_definition = :(
-                function __constructor__()
+                function __constructor__(__ins__::Vector{Vector{Float32}}, __server__::__SCSynth__)
                     $(__constructor_body__...)
                     return __UGen__($(args_names...))
                 end
@@ -275,8 +275,8 @@ macro object(name, body)
             #using Main.JuliaCollider.UGenMacros
 
             #SCUtilities
-            #import JuliaCollider.SCUtilities.__find_data_type__
-            using Main.JuliaCollider.SCUtilities
+            using JuliaCollider.SCUtilities
+            #using Main.JuliaCollider.SCUtilities
             
             #__SCSynth__
             import JuliaCollider.SCSynth.__SCSynth__

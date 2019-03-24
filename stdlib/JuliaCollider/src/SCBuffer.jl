@@ -1,7 +1,7 @@
 #= Module for pointers to SC buffers =#
 module SCBuffer
 
-    export Buffer, __get_shared_buf__, nchans
+    export Buffer, __get_shared_buf__
 
     mutable struct Buffer
         SCWorld::Ptr{Cvoid}
@@ -50,6 +50,7 @@ module SCBuffer
     import Base.setindex!
     import Base.length
     import Base.size
+    import JuliaCollider.SCData.nchans
     
     #Returns Float32
     function getindex(buffer::Buffer, index::Signed, channel::Signed = 1)
@@ -76,5 +77,4 @@ module SCBuffer
     function nchans(buffer::Buffer)
         return ccall(:jl_get_channels_buf_SC, Cint, (Ptr{Cvoid},), buffer.snd_buf)
     end
-
 end

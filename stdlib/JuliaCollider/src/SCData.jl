@@ -105,26 +105,58 @@
     import Base.size
     import Base.length
 
-    #= Should I remove boundschecking? =#
-
+    #= Add bounds checking in here too??? =#
+    
     #1d
-    function getindex(data::Data{T, 1}, index::Signed) where T
-        return @boundscheck Base.getindex(data.vec, index)
+    function getindex(data::Data{T, 1}, index::Int32) where T
+        return Base.getindex(data.vec, index)
+    end
+
+    function getindex(data::Data{T, 1}, index::Int64) where T
+        return Base.getindex(data.vec, index)
     end
 
     #2d
-    function getindex(data::Data{T, 2}, index1::Signed, index2::Signed) where T
-        return @boundscheck Base.getindex(data.vec, index1, index2)
+    function getindex(data::Data{T, 2}, index1::Int32, index2::Int32) where T
+        return Base.getindex(data.vec, index1, index2)
+    end
+
+    function getindex(data::Data{T, 2}, index1::Int32, index2::Int64) where T
+        return Base.getindex(data.vec, index1, index2)
+    end
+
+    function getindex(data::Data{T, 2}, index1::Int64, index2::Int32) where T
+        return Base.getindex(data.vec, index1, index2)
+    end
+
+    function getindex(data::Data{T, 2}, index1::Int64, index2::Int64) where T
+        return Base.getindex(data.vec, index1, index2)
     end
 
     #1d
-    function setindex!(data::Data{T, 1}, value::T, index::Signed) where T
-        return @boundscheck Base.setindex!(data.vec, value, index)
+    function setindex!(data::Data{T, 1}, value::T, index::Int32) where T
+        return Base.setindex!(data.vec, value, index)
+    end
+
+    function setindex!(data::Data{T, 1}, value::T, index::Int64) where T
+        return Base.setindex!(data.vec, value, index)
     end
 
     #2d
-    function setindex!(data::Data{T, 2}, value::T, index1::Signed, index2::Signed) where T
-        return @boundscheck Base.setindex!(data.vec, value, index1, index2)
+    function setindex!(data::Data{T, 2}, value::T, index1::Int32, index2::Int32) where T
+        return Base.setindex!(data.vec, value, index1, index2)
+    end
+
+    function setindex!(data::Data{T, 2}, value::T, index1::Int32, index2::Int64) where T
+        return Base.setindex!(data.vec, value, index1, index2)
+    end
+
+    function setindex!(data::Data{T, 2}, value::T, index1::Int64, index2::Int32) where T
+        return Base.setindex!(data.vec, value, index1, index2)
+    end
+
+    function setindex!(data::Data{T, 2}, value::T, index1::Int64, index2::Int64) where T
+        return Base.setindex!(data.vec, value, index1, index2)
     end
 
     #length(Data) == size(Data)

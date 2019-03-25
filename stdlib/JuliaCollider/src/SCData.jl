@@ -39,16 +39,14 @@
         jl_get_ptls_states()->world_age = last_age;
     =#
 
-    #In case a Data won't be picked by the recursive __find_data_type__, add a finalizer to be executed at next GC
-    #= function __DataFinalizer__(data::Data)
-        println("*** FINALIZING data ***")
-        
-        __DataFree__(data)
-    end =#
-
     function Data(type::DataType, length::Signed, num_chans::Signed = 1)
-        if(type.mutable)
-            error("Data: only immutable types supported")
+        if(!(type <: Signed) && !(type <: AbstractFloat))
+            error("Data: only Signed and AbstractFloat subtypes are supported")
+            return nothing
+        end
+
+        if(!(isconcretetype(type)))
+            error("Data: only concrete types are supported")
             return nothing
         end
         
@@ -107,78 +105,145 @@
 
     #= Add bounds checking in here too??? =#
     
+    ##############
+    #= GETINDEX =#
+    ##############
+
     #1d
-    function getindex(data::Data{T, 1}, index::Int32) where T
+    function getindex(data::Data{T, 1}, index::Int32) where T <: Union{AbstractFloat, Signed}
         return Base.getindex(data.vec, index)
     end
 
-    function getindex(data::Data{T, 1}, index::Int64) where T
+    function getindex(data::Data{T, 1}, index::Int64) where T <: Union{AbstractFloat, Signed}
         return Base.getindex(data.vec, index)
     end
 
     #2d
-    function getindex(data::Data{T, 2}, index1::Int32, index2::Int32) where T
+    function getindex(data::Data{T, 2}, index1::Int32, index2::Int32) where T <: Union{AbstractFloat, Signed}
         return Base.getindex(data.vec, index1, index2)
     end
 
-    function getindex(data::Data{T, 2}, index1::Int32, index2::Int64) where T
+    function getindex(data::Data{T, 2}, index1::Int32, index2::Int64) where T <: Union{AbstractFloat, Signed}
         return Base.getindex(data.vec, index1, index2)
     end
 
-    function getindex(data::Data{T, 2}, index1::Int64, index2::Int32) where T
+    function getindex(data::Data{T, 2}, index1::Int64, index2::Int32) where T <: Union{AbstractFloat, Signed}
         return Base.getindex(data.vec, index1, index2)
     end
 
-    function getindex(data::Data{T, 2}, index1::Int64, index2::Int64) where T
+    function getindex(data::Data{T, 2}, index1::Int64, index2::Int64) where T <: Union{AbstractFloat, Signed}
         return Base.getindex(data.vec, index1, index2)
     end
 
-    #1d
-    function setindex!(data::Data{T, 1}, value::T, index::Int32) where T
+    ##############
+    #= SETINDEX =#
+    ##############
+
+    #1d, AbstractFloat
+    function setindex!(data::Data{T, 1}, value::Z, index::Int32) where {T <: AbstractFloat, Z <: AbstractFloat}
         return Base.setindex!(data.vec, value, index)
     end
 
-    function setindex!(data::Data{T, 1}, value::T, index::Int64) where T
+    function setindex!(data::Data{T, 1}, value::Z, index::Int64) where {T <: AbstractFloat, Z <: AbstractFloat}
         return Base.setindex!(data.vec, value, index)
     end
 
-    #2d
-    function setindex!(data::Data{T, 2}, value::T, index1::Int32, index2::Int32) where T
+    #1d, Signed
+    function setindex!(data::Data{T, 1}, value::Z, index::Int32) where {T <: Signed, Z <: Signed}
+        return Base.setindex!(data.vec, value, index)
+    end
+
+    function setindex!(data::Data{T, 1}, value::Z, index::Int64) where {T <: Signed, Z <: Signed}
+        return Base.setindex!(data.vec, value, index)
+    end
+
+    #2d, Same type
+    function setindex!(data::Data{T, 2}, value::T, index1::Int32, index2::Int32) where T <: Union{AbstractFloat, Signed}
         return Base.setindex!(data.vec, value, index1, index2)
     end
 
-    function setindex!(data::Data{T, 2}, value::T, index1::Int32, index2::Int64) where T
+    function setindex!(data::Data{T, 2}, value::T, index1::Int32, index2::Int64) where T <: Union{AbstractFloat, Signed}
         return Base.setindex!(data.vec, value, index1, index2)
     end
 
-    function setindex!(data::Data{T, 2}, value::T, index1::Int64, index2::Int32) where T
+    function setindex!(data::Data{T, 2}, value::T, index1::Int64, index2::Int32) where T <: Union{AbstractFloat, Signed}
         return Base.setindex!(data.vec, value, index1, index2)
     end
 
-    function setindex!(data::Data{T, 2}, value::T, index1::Int64, index2::Int64) where T
+    function setindex!(data::Data{T, 2}, value::T, index1::Int64, index2::Int64) where T <: Union{AbstractFloat, Signed}
         return Base.setindex!(data.vec, value, index1, index2)
     end
 
-    #length(Data) == size(Data)
-    function length(data::Data)
+    #2d, AbstractFloat
+    function setindex!(data::Data{T, 2}, value::Z, index1::Int32, index2::Int32) where {T <: AbstractFloat, Z <: AbstractFloat}
+        return Base.setindex!(data.vec, value, index1, index2)
+    end
+
+    function setindex!(data::Data{T, 2}, value::Z, index1::Int32, index2::Int64) where {T <: AbstractFloat, Z <: AbstractFloat}
+        return Base.setindex!(data.vec, value, index1, index2)
+    end
+
+    function setindex!(data::Data{T, 2}, value::Z, index1::Int64, index2::Int32) where {T <: AbstractFloat, Z <: AbstractFloat}
+        return Base.setindex!(data.vec, value, index1, index2)
+    end
+
+    function setindex!(data::Data{T, 2}, value::Z, index1::Int64, index2::Int64) where {T <: AbstractFloat, Z <: AbstractFloat}
+        return Base.setindex!(data.vec, value, index1, index2)
+    end
+
+    #2d, Signed
+    function setindex!(data::Data{T, 2}, value::Z, index1::Int32, index2::Int32) where {T <: Signed, Z <: Signed}
+        return Base.setindex!(data.vec, value, index1, index2)
+    end
+
+    function setindex!(data::Data{T, 2}, value::Z, index1::Int32, index2::Int64) where {T <: Signed, Z <: Signed}
+        return Base.setindex!(data.vec, value, index1, index2)
+    end
+
+    function setindex!(data::Data{T, 2}, value::Z, index1::Int64, index2::Int32) where {T <: Signed, Z <: Signed}
+        return Base.setindex!(data.vec, value, index1, index2)
+    end
+
+    function setindex!(data::Data{T, 2}, value::Z, index1::Int64, index2::Int64) where {T <: Signed, Z <: Signed}
+        return Base.setindex!(data.vec, value, index1, index2)
+    end
+
+    #General versions
+    function setindex!(data::Data{T, 1}, value::Z, index::Signed) where {T <: Union{AbstractFloat, Signed}, Z <: Union{AbstractFloat, Signed}}
+        return Base.setindex!(data.vec, value, index)
+    end
+
+    function setindex!(data::Data{T, 2}, value::Z, index1::Signed, index2::Signed) where {T <: Union{AbstractFloat, Signed}, Z <: Union{AbstractFloat, Signed}}
+        return Base.setindex!(data.vec, value, index1, index2)
+    end
+
+    ##############
+    #=  OTHERS  =#
+    ##############
+
+    function length(data::Data{T, 1}) where T <: Union{AbstractFloat, Signed}
         return data.length
     end
 
-    function nchans(data::Data)
+    function length(data::Data{T, 2}) where T <: Union{AbstractFloat, Signed}
+        return data.length
+    end
+
+    function nchans(data::Data{T, 1}) where T <: Union{AbstractFloat, Signed}
+        return data.num_chans
+    end
+
+    function nchans(data::Data{T, 2}) where T <: Union{AbstractFloat, Signed}
         return data.num_chans
     end
 
     #1d == length(size)
-    function size(data::Data{T, 1}) where T
+    function size(data::Data{T, 1}) where T <: Union{AbstractFloat, Signed}
         return data.length
     end
 
     #2d == length * nchans
-    function size(data::Data{T, 2}) where T
+    function size(data::Data{T, 2}) where T <: Union{AbstractFloat, Signed}
         return data.length * data.num_chans
     end
-
-    #macro data() end
-
-    #macro free() end
 end

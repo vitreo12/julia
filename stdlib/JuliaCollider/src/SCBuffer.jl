@@ -57,7 +57,7 @@ module SCBuffer
         return ccall(:jl_get_float_value_buf_SC, Cfloat, (Ptr{Cvoid}, Int, Int), buffer.snd_buf, index, channel)
     end
 
-    function getindex(buffer::Buffer, index::Int32, channel::Int32 = 1)
+    function getindex(buffer::Buffer, index::Int32, channel::Int32 = Int32(1))
         return ccall(:jl_get_float_value_buf_SC, Cfloat, (Ptr{Cvoid}, Int, Int), buffer.snd_buf, index, channel)
     end
 
@@ -65,7 +65,7 @@ module SCBuffer
         return ccall(:jl_get_float_value_buf_SC, Cfloat, (Ptr{Cvoid}, Int, Int), buffer.snd_buf, index, channel)
     end
 
-    function getindex(buffer::Buffer, index::Int64, channel::Int32 = 1)
+    function getindex(buffer::Buffer, index::Int64, channel::Int32 = Int32(1))
         return ccall(:jl_get_float_value_buf_SC, Cfloat, (Ptr{Cvoid}, Int, Int), buffer.snd_buf, index, channel)
     end
 
@@ -80,12 +80,12 @@ module SCBuffer
     end
     
     #Specialized versions
-    function setindex!(buffer::Buffer, value::Float32, index::Int32, channel::Int32 = 1)
+    function setindex!(buffer::Buffer, value::Float32, index::Int32, channel::Int32 = Int32(1))
         ccall(:jl_set_float_value_buf_SC, Cvoid, (Ptr{Cvoid}, Cfloat, Int, Int), buffer.snd_buf, value, index, channel)
         return nothing
     end
 
-    function setindex!(buffer::Buffer, value::Float64, index::Int32, channel::Int32 = 1)
+    function setindex!(buffer::Buffer, value::Float64, index::Int32, channel::Int32 = Int32(1))
         ccall(:jl_set_float_value_buf_SC, Cvoid, (Ptr{Cvoid}, Cfloat, Int, Int), buffer.snd_buf, Float32(value), index, channel)
         return nothing
     end
@@ -100,12 +100,12 @@ module SCBuffer
         return nothing
     end
 
-    function setindex!(buffer::Buffer, value::Float32, index::Int64, channel::Int32 = 1)
+    function setindex!(buffer::Buffer, value::Float32, index::Int64, channel::Int32 = Int32(1))
         ccall(:jl_set_float_value_buf_SC, Cvoid, (Ptr{Cvoid}, Cfloat, Int, Int), buffer.snd_buf, value, index, channel)
         return nothing
     end
 
-    function setindex!(buffer::Buffer, value::Float64, index::Int64, channel::Int32 = 1)
+    function setindex!(buffer::Buffer, value::Float64, index::Int64, channel::Int32 = Int32(1))
         ccall(:jl_set_float_value_buf_SC, Cvoid, (Ptr{Cvoid}, Cfloat, Int, Int), buffer.snd_buf, Float32(value), index, channel)
         return nothing
     end
@@ -120,12 +120,12 @@ module SCBuffer
         return nothing
     end
 
-    function setindex!(buffer::Buffer, value::Int32, index::Int32, channel::Int32 = 1)
+    function setindex!(buffer::Buffer, value::Int32, index::Int32, channel::Int32 = Int32(1))
         ccall(:jl_set_float_value_buf_SC, Cvoid, (Ptr{Cvoid}, Cfloat, Int, Int), buffer.snd_buf, Float32(value), index, channel)
         return nothing
     end
 
-    function setindex!(buffer::Buffer, value::Int64, index::Int32, channel::Int32 = 1)
+    function setindex!(buffer::Buffer, value::Int64, index::Int32, channel::Int32 = Int32(1))
         ccall(:jl_set_float_value_buf_SC, Cvoid, (Ptr{Cvoid}, Cfloat, Int, Int), buffer.snd_buf, Float32(value), index, channel)
         return nothing
     end
@@ -140,12 +140,12 @@ module SCBuffer
         return nothing
     end
 
-    function setindex!(buffer::Buffer, value::Int32, index::Int64, channel::Int32 = 1)
+    function setindex!(buffer::Buffer, value::Int32, index::Int64, channel::Int32 = Int32(1))
         ccall(:jl_set_float_value_buf_SC, Cvoid, (Ptr{Cvoid}, Cfloat, Int, Int), buffer.snd_buf, Float32(value), index, channel)
         return nothing
     end
 
-    function setindex!(buffer::Buffer, value::Int64, index::Int64, channel::Int32 = 1)
+    function setindex!(buffer::Buffer, value::Int64, index::Int64, channel::Int32 = Int32(1))
         ccall(:jl_set_float_value_buf_SC, Cvoid, (Ptr{Cvoid}, Cfloat, Int, Int), buffer.snd_buf, Float32(value), index, channel)
         return nothing
     end

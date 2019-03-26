@@ -124,51 +124,7 @@ JL_DLLEXPORT jl_value_t *jl_invoke_already_compiled_SC(jl_method_instance_t *met
         return NULL;
     }
 
-    jl_value_t* result;
-
-    /*
-    jl_invoke needs all the stuff with world_age to find the correct fptr with 
-    jl_fptr_trampoline in the if statement 
-    */
-    
-    /* JL_TRY {
-
-        //ONLY UPDATING WORLD AGE, WITHOUT RESETTING TO last_age. NOW I CAN BE SURE THAT I HAVE NEWEST
-        //AGE EVEN WHEN CALLS IN include() HAPPEN. last_age THERE WOULD STILL BE A HIGH NUMBER, AND WON'T 
-        //COMPRIMISE THE STATE HERE, EVEN IF THEY CHANGE jl_get_ptls_states()->world_age
-        
-         size_t last_age = jl_get_ptls_states()->world_age;
-        jl_get_ptls_states()->world_age = jl_get_world_counter();
-        
-        printf("last_age : %zu \n", last_age);
-        printf("world_age : %zu \n", jl_get_ptls_states()->world_age);
-        printf("min_world : %zu \n", meth->min_world);
-        printf("max_world : %zu \n", meth->max_world);
-
-        result = meth->invoke(meth, args, nargs);
-
-        //jl_get_ptls_states()->world_age = last_age;
-
-        jl_exception_clear();
-    }
-    JL_CATCH {
-        jl_get_ptls_states()->previous_exception = jl_current_exception();
-
-        jl_value_t* exception = jl_exception_occurred();
-        jl_value_t* sprint_fun = jl_get_function(jl_base_module, "sprint");
-        jl_value_t* showerror_fun = jl_get_function(jl_base_module, "showerror");
-
-        if(exception)
-        {
-            const char* returned_exception = jl_string_ptr(jl_call2(sprint_fun, showerror_fun, exception));
-            printf("ERROR: %s\n", returned_exception);
-        }
-
-        result = NULL;
-    } */
-    
-    //No exception handling here. Should have been dealt with before in jl_lookup_generic_SC or jl_lookup_generic_and_compile_SC
-    result = meth->invoke(meth, args, nargs);
+    jl_value_t* result = meth->invoke(meth, args, nargs);
 
     return result;
 }

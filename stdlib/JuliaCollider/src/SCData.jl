@@ -1,13 +1,11 @@
 #= Module for memory allocation using SC's RTAlloc/RTFree callbacks =#
-    module SCData
+module SCData
 
     export Data, __DataFree__, nchans
 
-    #Have specialized Data for Float32, Float64 ???
-
     #It needs to be mutable to set data.ptr = C_NULL.
     #I could actually maybe remove that line if no finalizers are ran anyway...
-    struct Data{T, N}
+    mutable struct Data{T, N}
         ptr::Ptr{T}
         vec::Array{T, N}
         length::Signed
@@ -27,7 +25,7 @@
             
             #data.ptr would now be pointing at a wrong memory location, since it's been freed. 
             #Set ptr to NULL
-            #data.ptr = C_NULL
+            data.ptr = C_NULL
         end
     end
 
@@ -80,7 +78,7 @@
             data_1d::Data{type, 1} = Data{type, 1}(ptr, vec_1d, length, num_chans)
 
             #Register finalizer
-            #finalizer(__DataFinalizer__, data_1d)
+            finalizer(__DataFree__, data_1d)
 
             return data_1d
         else
@@ -91,7 +89,7 @@
             data_2d::Data{type, 2} = Data{type, 2}(ptr, vec_2d, length, num_chans)
 
             #Register finalizer
-            #finalizer(__DataFinalizer__, data_2d)
+            finalizer(__DataFree__, data_2d)
 
             return data_2d
         end
@@ -109,7 +107,16 @@
     #= GETINDEX =#
     ##############
 
-    #1d
+    #Generalized versions
+    function getindex(data::Data{T, 1}, index1::Signed) where T <: Union{AbstractFloat, Signed}
+        return Base.getindex(data.vec, index1)
+    end
+
+    function getindex(data::Data{T, 2}, index1::Signed, index2::Signed) where T <: Union{AbstractFloat, Signed}
+        return Base.getindex(data.vec, index1, index2)
+    end
+
+    #Specialized 1d
     function getindex(data::Data{T, 1}, index::Int32) where T <: Union{AbstractFloat, Signed}
         return Base.getindex(data.vec, index)
     end
@@ -118,7 +125,7 @@
         return Base.getindex(data.vec, index)
     end
 
-    #2d
+    #Specialized 2d
     function getindex(data::Data{T, 2}, index1::Int32, index2::Int32) where T <: Union{AbstractFloat, Signed}
         return Base.getindex(data.vec, index1, index2)
     end
@@ -139,7 +146,34 @@
     #= SETINDEX =#
     ##############
 
-    #1d, AbstractFloat
+    #Generalized versions
+    function setindex!(data::Data{T, 1}, value::Z, index::Signed) where {T <: Union{AbstractFloat, Signed}, Z <: Union{AbstractFloat, Signed}}
+        return Base.setindex!(data.vec, value, index)
+    end
+
+    function setindex!(data::Data{T, 2}, value::Z, index1::Signed, index2::Signed) where {T <: Union{AbstractFloat, Signed}, Z <: Union{AbstractFloat, Signed}}
+        return Base.setindex!(data.vec, value, index1, index2)
+    end
+
+    #Specialized same AbstractFloat 1d
+    function setindex!(data::Data{T, 1}, value::T, index::Int32) where T <: AbstractFloat
+        return Base.setindex!(data.vec, value, index)
+    end
+
+    function setindex!(data::Data{T, 1}, value::T, index::Int64) where T <: AbstractFloat
+        return Base.setindex!(data.vec, value, index)
+    end
+
+    #Specialized same Signed 1d
+    function setindex!(data::Data{T, 1}, value::T, index::Int32) where T <: Signed
+        return Base.setindex!(data.vec, value, index)
+    end
+
+    function setindex!(data::Data{T, 1}, value::T, index::Int64) where T <: Signed
+        return Base.setindex!(data.vec, value, index)
+    end
+
+    #Specialized different AbstractFloat 1d
     function setindex!(data::Data{T, 1}, value::Z, index::Int32) where {T <: AbstractFloat, Z <: AbstractFloat}
         return Base.setindex!(data.vec, value, index)
     end
@@ -148,7 +182,7 @@
         return Base.setindex!(data.vec, value, index)
     end
 
-    #1d, Signed
+    #Specialized different Signed 1d
     function setindex!(data::Data{T, 1}, value::Z, index::Int32) where {T <: Signed, Z <: Signed}
         return Base.setindex!(data.vec, value, index)
     end
@@ -157,24 +191,41 @@
         return Base.setindex!(data.vec, value, index)
     end
 
-    #2d, Same type
-    function setindex!(data::Data{T, 2}, value::T, index1::Int32, index2::Int32) where T <: Union{AbstractFloat, Signed}
+    #Specialized same AbstractFloat 2d
+    function setindex!(data::Data{T, 2}, value::T, index1::Int32, index2::Int32) where T <: AbstractFloat
         return Base.setindex!(data.vec, value, index1, index2)
     end
 
-    function setindex!(data::Data{T, 2}, value::T, index1::Int32, index2::Int64) where T <: Union{AbstractFloat, Signed}
+    function setindex!(data::Data{T, 2}, value::T, index1::Int32, index2::Int64) where T <: AbstractFloat
         return Base.setindex!(data.vec, value, index1, index2)
     end
 
-    function setindex!(data::Data{T, 2}, value::T, index1::Int64, index2::Int32) where T <: Union{AbstractFloat, Signed}
+    function setindex!(data::Data{T, 2}, value::T, index1::Int64, index2::Int32) where T <: AbstractFloat
         return Base.setindex!(data.vec, value, index1, index2)
     end
 
-    function setindex!(data::Data{T, 2}, value::T, index1::Int64, index2::Int64) where T <: Union{AbstractFloat, Signed}
+    function setindex!(data::Data{T, 2}, value::T, index1::Int64, index2::Int64) where T <: AbstractFloat
         return Base.setindex!(data.vec, value, index1, index2)
     end
 
-    #2d, AbstractFloat
+    #Specialized same Signed 2d
+    function setindex!(data::Data{T, 2}, value::T, index1::Int32, index2::Int32) where T <: Signed
+        return Base.setindex!(data.vec, value, index1, index2)
+    end
+
+    function setindex!(data::Data{T, 2}, value::T, index1::Int32, index2::Int64) where T <: Signed
+        return Base.setindex!(data.vec, value, index1, index2)
+    end
+
+    function setindex!(data::Data{T, 2}, value::T, index1::Int64, index2::Int32) where T <: Signed
+        return Base.setindex!(data.vec, value, index1, index2)
+    end
+
+    function setindex!(data::Data{T, 2}, value::T, index1::Int64, index2::Int64) where T <: Signed
+        return Base.setindex!(data.vec, value, index1, index2)
+    end
+
+    #Specialized different AbstractFloat 2d
     function setindex!(data::Data{T, 2}, value::Z, index1::Int32, index2::Int32) where {T <: AbstractFloat, Z <: AbstractFloat}
         return Base.setindex!(data.vec, value, index1, index2)
     end
@@ -191,7 +242,7 @@
         return Base.setindex!(data.vec, value, index1, index2)
     end
 
-    #2d, Signed
+    #Specialized different Signed 2d
     function setindex!(data::Data{T, 2}, value::Z, index1::Int32, index2::Int32) where {T <: Signed, Z <: Signed}
         return Base.setindex!(data.vec, value, index1, index2)
     end
@@ -205,15 +256,6 @@
     end
 
     function setindex!(data::Data{T, 2}, value::Z, index1::Int64, index2::Int64) where {T <: Signed, Z <: Signed}
-        return Base.setindex!(data.vec, value, index1, index2)
-    end
-
-    #General versions
-    function setindex!(data::Data{T, 1}, value::Z, index::Signed) where {T <: Union{AbstractFloat, Signed}, Z <: Union{AbstractFloat, Signed}}
-        return Base.setindex!(data.vec, value, index)
-    end
-
-    function setindex!(data::Data{T, 2}, value::Z, index1::Signed, index2::Signed) where {T <: Union{AbstractFloat, Signed}, Z <: Union{AbstractFloat, Signed}}
         return Base.setindex!(data.vec, value, index1, index2)
     end
 

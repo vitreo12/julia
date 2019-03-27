@@ -9,7 +9,8 @@
 #include "dtypes.h"
 #include "arraylist.h"
 
-/* JULIACOLLIDER */
+/* JULIACOLLIDER. Must always come after dtypes.h
+to overwrite LLT_ALLOC, LLT_REALLOC and LLT_FREE macros */
 #include "../SC_Julia.h"
 #include "../SC_AllocMacros.h"
 

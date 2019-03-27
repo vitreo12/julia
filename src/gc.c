@@ -2420,7 +2420,7 @@ mark: {
         else {
             if (__unlikely(!jl_is_datatype(vt)))
             {
-                printf("FAILED DATATYPE: %s \n", jl_symbol(vt));
+                //printf("FAILED DATATYPE:  \n");
                 gc_assert_datatype_fail(ptls, vt, sp);
             }
             size_t dtsz = jl_datatype_size(vt);
@@ -2714,7 +2714,7 @@ static void jl_gc_queue_bt_buf(jl_gc_mark_cache_t *gc_cache, jl_gc_mark_sp_t *sp
 // Only one thread should be running in this function
 static int _jl_gc_collect(jl_ptls_t ptls, int full)
 {
-    printf("*** START GC\n");
+    //printf("*** START GC\n");
     jl_gc_mark_cache_t *gc_cache = &ptls->gc_cache;
     jl_gc_mark_sp_t sp;
     gc_mark_sp_init(gc_cache, &sp);
@@ -2783,7 +2783,7 @@ static int _jl_gc_collect(jl_ptls_t ptls, int full)
     mark_reset_age = 0;
     gc_settime_postmark_end();
 
-    printf("*** FINISH MARK PHASE GC\n");
+    //printf("*** FINISH MARK PHASE GC\n");
 
     // Flush everything in mark cache
     gc_sync_all_caches_nolock(ptls);
@@ -2866,7 +2866,7 @@ static int _jl_gc_collect(jl_ptls_t ptls, int full)
         }
     }
 
-    printf("*** FINISH SWEEP PHASE GC\n");
+    //printf("*** FINISH SWEEP PHASE GC\n");
 
     uint64_t gc_end_t = jl_hrtime();
     uint64_t pause = gc_end_t - t0;
@@ -2882,7 +2882,7 @@ static int _jl_gc_collect(jl_ptls_t ptls, int full)
     gc_num.since_sweep = 0;
     gc_num.freed = 0;
 
-    printf("*** FINISH ALL GC\n");
+    //printf("*** FINISH ALL GC\n");
 
     return recollect;
 }

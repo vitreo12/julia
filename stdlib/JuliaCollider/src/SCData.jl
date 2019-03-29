@@ -3,13 +3,12 @@ module SCData
 
     export Data, __DataFree__, nchans
 
-    #It needs to be mutable to set data.ptr = C_NULL.
-    #I could actually maybe remove that line if no finalizers are ran anyway...
+    #It needs to be mutable to set data.ptr = C_NULL (if using finalizer)
     mutable struct Data{T, N}
         ptr::Ptr{T}
         vec::Array{T, N}
-        length::Signed
-        num_chans::Signed
+        length::Int
+        num_chans::Int
     end
 
     #RTFree() called in destructor.
@@ -30,7 +29,8 @@ module SCData
     end
 
     #= 
-    The code for finalizers could be lead to errors:
+    FINALIZER/RT THREAD INTERACTION:
+    The code for finalizers could lead to errors if performed together with RT thread :
         size_t last_age = jl_get_ptls_states()->world_age;
         jl_get_ptls_states()->world_age = jl_world_counter;
         jl_apply(args, 2);
@@ -75,7 +75,7 @@ module SCData
             vec_1d::Vector{type} = unsafe_wrap(Vector{type}, ptr, length)
             
             #Construct a Data object
-            data_1d::Data{type, 1} = Data{type, 1}(ptr, vec_1d, length, num_chans)
+            data_1d::Data{type, 1} = Data{type, 1}(ptr, vec_1d, Int(length), Int(num_chans))
 
             #Register finalizer
             finalizer(__DataFree__, data_1d)
@@ -86,7 +86,7 @@ module SCData
             vec_2d::Array{type, 2} = unsafe_wrap(Array{type, 2}, ptr, (num_chans, length))
 
             #Construct a Data object
-            data_2d::Data{type, 2} = Data{type, 2}(ptr, vec_2d, length, num_chans)
+            data_2d::Data{type, 2} = Data{type, 2}(ptr, vec_2d, Int(length), Int(num_chans))
 
             #Register finalizer
             finalizer(__DataFree__, data_2d)
@@ -101,7 +101,9 @@ module SCData
     import Base.size
     import Base.length
 
-    #= Add bounds checking in here too??? =#
+    #= Does it need boundschecking here? =#
+
+    #= Test if having a ccall to index the pointer directly, without any Julia wraps, would be faster =#
     
     ##############
     #= GETINDEX =#

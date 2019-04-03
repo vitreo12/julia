@@ -95,8 +95,8 @@ JL_DLLEXPORT void jl_init_with_image_SC(const char *julia_bindir,
         RT_memory_start_uintptr = (uintptr_t)RT_memory_start;
         RT_memory_size_uintptr = (uintptr_t)RT_memory_size;
         
-        printf("MEMORY START %zu\n", (uintptr_t)RT_memory_start);
-        printf("MEMORY SIZE %zu\n", RT_memory_size);
+        //printf("MEMORY START %zu\n", (uintptr_t)RT_memory_start);
+        //printf("MEMORY SIZE %zu\n", RT_memory_size);
     }
     
     libsupport_init();

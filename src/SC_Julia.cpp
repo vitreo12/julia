@@ -159,7 +159,8 @@ extern "C"
 			return calloc(nitems, inSize);
 	}
 
-	//ADD CREDITS: https://github.com/chneukirchen/musl-chris2/blob/master/src/malloc/posix_memalign.c
+	//Code adapted from:
+	//https://github.com/chneukirchen/musl-chris2/blob/master/src/malloc/posix_memalign.c
 	int RTPosix_memalign(JuliaAllocPool* inPool, void **res, size_t align, size_t len)
 	{
 		if(inPool != sc_julia_alloc_pool)
@@ -246,7 +247,7 @@ extern "C"
 			return posix_memalign(res, align, len);
 	}
 
-	/* STANDARD free() FUNCTION. NEEDED FOR jl_gc_free_array() in gc.c */
+	/* STANDARD free() FUNCTION. NEEDED FOR jl_gc_free_array() in gc.c. See comment there. */
 	void free_standard(void* inPtr)
 	{
 		free(inPtr);

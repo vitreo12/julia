@@ -54,7 +54,6 @@ extern void* SC_RTRealloc(JuliaAllocPool* inPool, void *inPtr, size_t inSize);
 extern void  SC_RTFree(JuliaAllocPool* inPool, void* inPtr);
 extern void* SC_RTCalloc(JuliaAllocPool* inPool, size_t nitems, size_t inSize);
 
-//ADD CREDITS: https://github.com/chneukirchen/musl-chris2/blob/master/src/malloc/posix_memalign.c
 extern int RTPosix_memalign(JuliaAllocPool* inPool, void **res, size_t align, size_t len);
 extern int SC_RTPosix_memalign(JuliaAllocPool* inPool, void **res, size_t align, size_t len);
 

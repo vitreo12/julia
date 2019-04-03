@@ -17,7 +17,7 @@ module SCData
     function __DataFree__(data::Data) 
         #If valid memory
         if(data.ptr != C_NULL)
-            println("*** RTFree data ***")
+            #println("*** RTFree data ***")
             
             #RTFree call
             ccall(:jl_rtfree_sc, Cvoid, (Ptr{Cvoid},), data.ptr)

@@ -1,7 +1,7 @@
 #= Module for pointers to SC buffers =#
 module SCBuffer
 
-    export Buffer, __get_shared_buf__
+    export Buffer, __get_shared_buf__, samplerate, sampledur
 
     mutable struct Buffer
         SCWorld::Ptr{Cvoid}
@@ -72,6 +72,8 @@ module SCBuffer
     function getindex(buffer::Buffer, index::Int64, channel::Int64 = 1)
         return ccall(:jl_get_float_value_buf_SC, Cfloat, (Ptr{Cvoid}, Int, Int), buffer.snd_buf, Int(index), Int(channel))
     end
+
+    #Should they just return the ccall?
 
     #Generalized version
     function setindex!(buffer::Buffer, value::T, index::Signed, channel::Signed = 1) where T <: Union{AbstractFloat, Signed}
@@ -174,4 +176,15 @@ module SCBuffer
     function nchans(buffer::Buffer)
         return ccall(:jl_get_channels_buf_SC, Cint, (Ptr{Cvoid},), buffer.snd_buf)
     end
+
+    #Samplerate (Float64)
+    function samplerate(buffer::Buffer)
+        return ccall(:jl_get_samplerate_buf_SC, Cdouble, (Ptr{Cvoid},), buffer.snd_buf)
+    end
+
+    #Sampledur (Float64)
+    function sampledur(buffer::Buffer)
+        return ccall(:jl_get_sampledur_buf_SC, Cdouble, (Ptr{Cvoid},), buffer.snd_buf)
+    end
+
 end

@@ -1508,6 +1508,8 @@ JL_DLLEXPORT extern void jl_set_float_value_buf_SC(void* buf, float value, size_
 JL_DLLEXPORT extern int jl_get_frames_buf_SC(void* buf);
 JL_DLLEXPORT extern int jl_get_samples_buf_SC(void* buf);
 JL_DLLEXPORT extern int jl_get_channels_buf_SC(void* buf);
+JL_DLLEXPORT extern double jl_get_samplerate_buf_SC(void* buf);
+JL_DLLEXPORT extern double jl_get_sampledur_buf_SC(void* buf);
 
 #ifdef __cplusplus
 }

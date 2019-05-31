@@ -1488,7 +1488,8 @@ JL_DLLEXPORT void jl_init_with_image_SC(const char *julia_bindir,
                                      struct JuliaAllocPool* in_sc_julia_alloc_pool,
                                      struct JuliaAllocFuncs* in_sc_julia_alloc_funcs,
                                      void* in_RT_memory_start,
-                                     size_t in_RT_memory_size);
+                                     size_t in_RT_memory_size,
+                                     int supernova);
 
 JL_DLLEXPORT void* jl_get_SCWorld();
 

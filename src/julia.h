@@ -1488,7 +1488,8 @@ JL_DLLEXPORT void jl_init_with_image_SC(const char *julia_bindir,
                                      struct JuliaAllocPool* in_sc_julia_alloc_pool,
                                      struct JuliaAllocFuncs* in_sc_julia_alloc_funcs,
                                      void* in_RT_memory_start,
-                                     size_t in_RT_memory_size);
+                                     size_t in_RT_memory_size,
+                                     int supernova);
 
 JL_DLLEXPORT void* jl_get_SCWorld();
 
@@ -1497,19 +1498,26 @@ JL_DLLEXPORT void* jl_rtalloc_sc(size_t inSize);
 JL_DLLEXPORT void jl_rtfree_sc(void* inPtr);
 
 /* Julia.cpp (JuliaCollider source) */
-//__Buffer__
+/* __Buffer__ */
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-JL_DLLEXPORT extern void* jl_get_buf_shared_SC(void* buffer_SCWorld, float fbufnum);
-JL_DLLEXPORT extern float jl_get_float_value_buf_SC(void* buf, size_t index, size_t channel);
-JL_DLLEXPORT extern void jl_set_float_value_buf_SC(void* buf, float value, size_t index, size_t channel);
-JL_DLLEXPORT extern int jl_get_frames_buf_SC(void* buf);
-JL_DLLEXPORT extern int jl_get_samples_buf_SC(void* buf);
-JL_DLLEXPORT extern int jl_get_channels_buf_SC(void* buf);
-JL_DLLEXPORT extern double jl_get_samplerate_buf_SC(void* buf);
-JL_DLLEXPORT extern double jl_get_sampledur_buf_SC(void* buf);
+//Get buffer (with lock and unlock for supernova)
+JL_DLLEXPORT void* jl_get_SC_buffer(void* buffer_SCWorld, float fbufnum);
+JL_DLLEXPORT void* jl_get_supernova_buffer_and_lock(void* buffer_SCWorld, float fbufnum);
+JL_DLLEXPORT void* jl_unlock_supernova_buffer(void* buf);
+
+//Get/set values of buffer
+JL_DLLEXPORT float jl_get_float_value_SC_buffer(void* buf, size_t index, size_t channel);
+JL_DLLEXPORT void jl_set_float_value_SC_buffer(void* buf, float value, size_t index, size_t channel);
+
+//Get buffer infos
+JL_DLLEXPORT int jl_get_frames_SC_buffer(void* buf);
+JL_DLLEXPORT int jl_get_samples_SC_buffer(void* buf);
+JL_DLLEXPORT int jl_get_channels_SC_buffer(void* buf);
+JL_DLLEXPORT double jl_get_samplerate_SC_buffer(void* buf);
+JL_DLLEXPORT double jl_get_sampledur_SC_buffer(void* buf);
 
 #ifdef __cplusplus
 }

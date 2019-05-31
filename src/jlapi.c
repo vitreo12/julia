@@ -68,7 +68,8 @@ JL_DLLEXPORT void jl_init_with_image_SC(const char *julia_bindir,
                                      JuliaAllocPool* in_sc_julia_alloc_pool,
                                      JuliaAllocFuncs* in_sc_julia_alloc_funcs,
                                      void* in_RT_memory_start,
-                                     size_t in_RT_memory_size)
+                                     size_t in_RT_memory_size,
+                                     int supernova)
 {
     if (jl_is_initialized())
         return;
@@ -99,14 +100,13 @@ JL_DLLEXPORT void jl_init_with_image_SC(const char *julia_bindir,
         //printf("MEMORY SIZE %zu\n", RT_memory_size);
     }
     
-    libsupport_init();
-    jl_options.julia_bindir = julia_bindir;
-    if (image_relative_path != NULL)
-        jl_options.image_file = image_relative_path;
+    jl_init_with_image(julia_bindir, image_relative_path);
+
+    //Initialize if scsynth or supernova right away
+    if(!supernova)
+        jl_eval_string("global const __SUPERNOVA__ = 0"); //in Main
     else
-        jl_options.image_file = jl_get_default_sysimg_path();
-    julia_init(JL_IMAGE_JULIA_HOME);
-    jl_exception_clear();
+        jl_eval_string("global const __SUPERNOVA__ = 1"); //in Main
 }
 
 JL_DLLEXPORT void* jl_get_SCWorld()

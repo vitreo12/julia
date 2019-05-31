@@ -122,6 +122,10 @@ macro object(name, body)
                 var_type = arg[2]
                 push!(unroll_constructor_variables_perform, :($(var_name)::$(var_type) = __unit__.$(var_name)))
 
+                #################################
+                #SPECIAL CASE: recursive search:#
+                #################################
+
                 #================================================#
                 #================================================#
                 #= IT WORKS, BUT IT SLOWS THINGS QUITE A BIT... =# 
@@ -133,7 +137,7 @@ macro object(name, body)
                 #= ALSO, IT ALLOCATES A LOT OF MEMORY!!!!!!!... =# 
                 #================================================#
                 #================================================#
-                
+
                 #Recursively find Buffer for this var_name/var_type. It expects that the full
                 #var_type is defined, up until Buffer.
                 final_path_buffer::Vector{Symbol} = __find_data_type__(SCBuffer.Buffer, var_name, var_type)
@@ -142,22 +146,34 @@ macro object(name, body)
                 if(!isempty(final_path_buffer))
                     for this_final_path in final_path_buffer
                         #Since the Vector{Symbol} returned is not parsed, I need to parse it in here to create a valid Expr
-                        push!(unroll_constructor_variables_perform, Base.parse_input_line("__get_shared_buf__(__unit__.$(this_final_path), __ins__[__unit__.$(this_final_path).input_num][1])"))
+                        if(Main.__SUPERNOVA__ == 0) #scsynth
+                            push!(unroll_constructor_variables_perform, Base.parse_input_line("__get_SC_buffer__(__unit__.$(this_final_path), __ins__[__unit__.$(this_final_path).input_num][1])"))
+                        else                        #supernova
+                            push!(unroll_constructor_variables_perform, Base.parse_input_line("__get_supernova_buffer_and_lock__(__unit__.$(this_final_path), __ins__[__unit__.$(this_final_path).input_num][1])"))
+                        end
                     end
                 end
 
-                #= If it's a Buffer, also run the __get_shared_buf__ command for the specific input that's been set in Buffer constructor (Buffer.input_num)
+                #######################################################################
+                #NORAML CASE: no recursive search (the var_name directly is a Buffer):#
+                #######################################################################
+                
+                #= If it's a Buffer, also run the __get_SC_buffer__ command for the specific input that's been set in Buffer constructor (Buffer.input_num)
                 There is no need to do input checking, as it's outside the @sample macro (where access is @inbounds), and, thus, it's boundschecked =#
                 if(var_type <: Buffer)
-                    push!(unroll_constructor_variables_perform, :(__get_shared_buf__($(var_name), __ins__[$(var_name).input_num][1])))
+                    if(Main.__SUPERNOVA__ == 0) #scsynth
+                        push!(unroll_constructor_variables_perform, :(__get_SC_buffer__($(var_name), __ins__[$(var_name).input_num][1])))
+                    else                        #supernova
+                        push!(unroll_constructor_variables_perform, :(__get_supernova_buffer_and_lock__($(var_name), __ins__[$(var_name).input_num][1])))
+                    end
                 end
             end   
 
-            #User can access __unit__ elemtns by simply calling them. They have been unrolled in the unroll_constructor_variables array
+            #User can now access __unit__ elements by simply calling them. They have been unrolled in the unroll_constructor_variables array
             perform_definition = :(
                 function __perform__(__unit__::__UGen__, __ins__::Vector{Vector{Float32}}, __outs__::Vector{Vector{Float32}}, __buffer_size__::Int32, __server__::__SCSynth__)
                     $(unroll_constructor_variables_perform...)
-                    $(__perform_body__...)
+                    $(__perform_body__...) #it is a global variable in this module
                     return nothing
                 end
             )
@@ -174,6 +190,10 @@ macro object(name, body)
             for arg in __args_with_types__
                 var_name = arg[1]
                 var_type = arg[2]
+
+                #################################
+                #SPECIAL CASE: recursive search:#
+                #################################
 
                 #================================================#
                 #================================================#
@@ -198,11 +218,41 @@ macro object(name, body)
                         push!(unroll_constructor_variables_destructor, Base.parse_input_line("__DataFree__(__unit__.$(this_final_path))")) 
                     end
                 end
-                
+
+                #####################################################################
+                #NORAML CASE: no recursive search (the var_name directly is a Data):#
+                #####################################################################
+
                 #Insert the __DataFree__ to free all allocated Data when calling destructor
                 if(var_type <: Data)
                     push!(unroll_constructor_variables_destructor, :(__DataFree__(__unit__.$(var_name))))
                 end
+
+                #supernova, unlock the locked buffer. Perhaps, it's kind of memory expensive to run a second __find_data_type__ functions here ...
+                if(Main.__SUPERNOVA__ == 1)
+
+                    #################################
+                    #SPECIAL CASE: recursive search:#
+                    #################################
+
+                    final_path_buffer::Vector{Symbol} = __find_data_type__(SCBuffer.Buffer, var_name, var_type)
+
+                    if(!isempty(final_path_buffer))
+                        for this_final_path in final_path_buffer
+                            #Since the Vector{Symbol} returned is not parsed, I need to parse it in here to create a valid Expr
+                            push!(unroll_constructor_variables_perform, Base.parse_input_line("__unlock_supernova_buffer__(__unit__.$(this_final_path))"))
+                        end
+                    end
+
+                    #######################################################################
+                    #NORAML CASE: no recursive search (the var_name directly is a Buffer):#
+                    #######################################################################
+
+                    if(var_type <: Buffer)
+                        push!(unroll_constructor_variables_perform, :(__unlock_supernova_buffer__(__unit__.$(var_name))))
+                    end
+                end
+                
             end 
 
             destructor_definition = :(

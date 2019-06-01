@@ -1,3 +1,0 @@
-JULIA_THREADS=0
-MARCH=native
-JULIA_CPU_TARGET=native

@@ -1,6 +1,7 @@
 module JuliaCollider
 
 include("JuliaDef.jl")
+include("IORef.jl")
 include("SCUtilities.jl")
 include("SCSynth.jl")
 include("SCData.jl")

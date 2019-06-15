@@ -279,24 +279,18 @@ macro object(name, body)
     local ugen_ref_definition = :(
         struct __UGenRef__
             object::Base.RefValue{__UGen__}
-            
-            ins::Base.RefValue{Vector{Vector{Float32}}}
-            outs::Base.RefValue{Vector{Vector{Float32}}}
 
             #= Should I also keep the module itself alive?? =#
             destructor_fun::Base.RefValue{Function}
             destructor_instance::Base.RefValue{Core.MethodInstance}
 
-            function __UGenRef__(o::__UGen__, i_v::Vector{Vector{Float32}}, o_v::Vector{Vector{Float32}}, d_f::Function, d_i::Core.MethodInstance)
+            function __UGenRef__(o::__UGen__, d_f::Function, d_i::Core.MethodInstance)
                 o_r::Base.RefValue{__UGen__} = Base.RefValue{__UGen__}(o)
-                
-                i_v_r::Base.RefValue{Vector{Vector{Float32}}} = Base.RefValue{Vector{Vector{Float32}}}(i_v)
-                o_v_r::Base.RefValue{Vector{Vector{Float32}}} = Base.RefValue{Vector{Vector{Float32}}}(o_v)
                 
                 d_f_r::Base.RefValue{Function} = Base.RefValue{Function}(d_f)
                 d_i_r::Base.RefValue{Core.MethodInstance} = Base.RefValue{Core.MethodInstance}(d_i)
 
-                return new(o_r, i_v_r, o_v_r, d_f_r, d_i_r)
+                return new(o_r, d_f_r, d_i_r)
             end
         end
     )

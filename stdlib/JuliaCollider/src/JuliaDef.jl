@@ -14,11 +14,10 @@ module JuliaDef
         destructor_instance::Base.RefValue{Core.MethodInstance}
         set_index_ugen_ref_instance::Base.RefValue{Core.MethodInstance}
         delete_index_ugen_ref_instance::Base.RefValue{Core.MethodInstance}
-        set_index_audio_vector_instance::Base.RefValue{Core.MethodInstance}
         
         #Should I construct it with Base.RefValue{Module}, Base.RefValue{Function} directly??
         #Module, Function and MethodInstance are just pointers, anyway...
-        function __JuliaDef__(e::Module, u_i::Core.MethodInstance, c_i::Core.MethodInstance, p_i::Core.MethodInstance, d_i::Core.MethodInstance, s_i_i::Core.MethodInstance, d_i_i::Core.MethodInstance, s_i_a_v::Core.MethodInstance)
+        function __JuliaDef__(e::Module, u_i::Core.MethodInstance, c_i::Core.MethodInstance, p_i::Core.MethodInstance, d_i::Core.MethodInstance, s_i_i::Core.MethodInstance, d_i_i::Core.MethodInstance)
             e_r::Base.RefValue{Module}                    = Base.RefValue{Module}(e)
             u_i_r::Base.RefValue{Core.MethodInstance}     = Base.RefValue{Core.MethodInstance}(u_i)
             c_i_r::Base.RefValue{Core.MethodInstance}     = Base.RefValue{Core.MethodInstance}(c_i)
@@ -26,9 +25,8 @@ module JuliaDef
             d_i_r::Base.RefValue{Core.MethodInstance}     = Base.RefValue{Core.MethodInstance}(d_i)
             s_i_i_r::Base.RefValue{Core.MethodInstance}   = Base.RefValue{Core.MethodInstance}(s_i_i)
             d_i_i_r::Base.RefValue{Core.MethodInstance}   = Base.RefValue{Core.MethodInstance}(d_i_i)
-            s_i_a_v_r::Base.RefValue{Core.MethodInstance} = Base.RefValue{Core.MethodInstance}(s_i_a_v)
 
-            return new(e_r, u_i_r, c_i_r, p_i_r, d_i_r, s_i_i_r, d_i_i_r, s_i_a_v_r)
+            return new(e_r, u_i_r, c_i_r, p_i_r, d_i_r, s_i_i_r, d_i_i_r)
         end
     end
 end
